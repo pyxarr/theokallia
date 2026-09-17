@@ -1,6 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { ValidateCouponDto, CouponCartItemDto } from './dto/validate-coupon.dto'
+import { CreateCouponDto } from './dto/create-coupon.dto'
+import { UpdateCouponDto } from './dto/update-coupon.dto'
 
 @Injectable()
 export class CouponsService {
@@ -61,6 +63,87 @@ export class CouponsService {
     const discount = this.calculateDiscount(coupon, dto.subtotal, dto.items)
 
     return { discount, type: coupon.type, code: coupon.code, couponId: coupon.id }
+  }
+
+  /**
+   * Returns all coupons for admin management, newest first.
+   */
+  async findAll() {
+    return this.prisma.client.coupon.findMany({
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  /**
+   * Creates a new coupon. Code is uppercased for case-insensitive matching.
+   * Duplicate codes throw a 409 via Prisma P2002 translation.
+   */
+  async create(dto: CreateCouponDto) {
+    const upperCode = dto.code.trim().toUpperCase()
+
+    try {
+      return await this.prisma.client.coupon.create({
+        data: {
+          ...dto,
+          code: upperCode,
+          scope: dto.scope ?? 'storewide',
+          scopeId: dto.scopeId ?? null,
+          minOrder: dto.minOrder ?? null,
+          maxUses: dto.maxUses ?? null,
+          perUserLimit: dto.perUserLimit ?? null,
+          expiresAt: dto.expiresAt ?? null,
+          active: dto.active ?? true,
+        },
+      })
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new ConflictException('Coupon code ' + upperCode + ' already exists.')
+      }
+      throw err
+    }
+  }
+
+  /**
+   * Retrieves a single coupon by id. Throws 404 when missing.
+   */
+  async findOne(id: string) {
+    const coupon = await this.prisma.client.coupon.findUnique({ where: { id } })
+    if (!coupon) {
+      throw new NotFoundException('Coupon with id ' + id + ' not found.')
+    }
+    return coupon
+  }
+
+  /**
+   * Patches a coupon by id. usedCount is never edited here — it is
+   * managed atomically inside order creation and reservation expiry.
+   */
+  async update(id: string, dto: UpdateCouponDto) {
+    await this.findOne(id)
+
+    const data = { ...dto }
+    if (data.code !== undefined) {
+      data.code = data.code.trim().toUpperCase()
+    }
+
+    try {
+      return await this.prisma.client.coupon.update({ where: { id }, data })
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new ConflictException('Coupon code already exists.')
+      }
+      throw err
+    }
+  }
+
+  /**
+   * Deletes a coupon by id. CouponUse rows cascade; usedCount
+   * on past orders is left untouched.
+   */
+  async remove(id: string) {
+    await this.findOne(id)
+    await this.prisma.client.coupon.delete({ where: { id } })
+    return { message: 'Coupon with id ' + id + ' deleted successfully.' }
   }
 
   /**

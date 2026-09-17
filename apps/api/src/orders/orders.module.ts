@@ -5,6 +5,7 @@ import { OrdersController } from './orders.controller'
 import { PrismaModule } from '../prisma/prisma.module'
 import { OrdersProcessor } from './orders.processor'
 import { CouponsModule } from '../coupons/coupons.module'
+import { ShippingZonesModule } from './shipping-zones/shipping-zones.module'
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CouponsModule } from '../coupons/coupons.module'
       name: 'orders',
     }),
     CouponsModule,
+    ShippingZonesModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersProcessor],
