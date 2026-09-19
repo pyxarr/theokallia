@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common'
+import { Injectable, CanActivate, ExecutionContext, SetMetadata } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 
 // Key used to store roles metadata set by the @Roles() decorator
@@ -6,8 +6,11 @@ export const ROLES_KEY = 'roles'
 
 // Decorator to specify which roles are allowed to access a route
 // Usage: @Roles('admin')
+// Must use Nest's SetMetadata: it attaches metadata to the handler function,
+// which is where Reflector.getAllAndOverride reads it from. Reflect.metadata
+// writes to the prototype keyed by method name and is invisible to the guard.
 export function Roles(...roles: string[]) {
-  return Reflect.metadata(ROLES_KEY, roles)
+  return SetMetadata(ROLES_KEY, roles)
 }
 
 @Injectable()
