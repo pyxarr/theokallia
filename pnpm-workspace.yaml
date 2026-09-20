@@ -7,7 +7,9 @@ allowBuilds:
   '@scarf/scarf': false
   '@sentry/cli': true
   "@sentry/node-cpu-profiler": true
+  esbuild: true
   msgpackr-extract: true
   prisma: true
   sharp: true
   unrs-resolver: true
+  workerd: false

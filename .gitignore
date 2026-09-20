@@ -28,6 +28,9 @@ out/
 build
 dist
 
+# React Email preview cache
+.react-email/
+
 
 # Debug
 npm-debug.log*
