@@ -18,6 +18,7 @@ import { PaymentsModule } from './payments/payments.module'
 import { RateLimitModule } from './rate-limit/rate-limit.module'
 import { UploadModule } from './upload/upload.module'
 import { ContentModule } from './content/content.module'
+import { SubscribersModule } from './subscribers/subscribers.module'
 import { CouponsModule } from './coupons/coupons.module'
 import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
 import { auth } from './auth/auth'
@@ -44,6 +45,8 @@ import * as Joi from 'joi'
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
         ADMIN_ALERT_EMAIL: Joi.string().email().optional(),
+        RESEND_API_KEY: Joi.string().optional(),
+        RESEND_AUDIENCE_ID: Joi.string().optional(),
       }),
     }),
     // Register BullMQ globally — all queues use this Redis connection
@@ -70,6 +73,7 @@ import * as Joi from 'joi'
     RateLimitModule,
     UploadModule,
     ContentModule,
+    SubscribersModule,
   ],
   providers: [
     {

@@ -11,6 +11,14 @@ const prisma = new PrismaClient({
 })
 
 // Mail queue — mirrors the BullMQ queue in MailModule
+// Subscribers queue — mirrors the BullMQ queue in SubscribersModule
+const subscribersQueue = new Queue('subscribers', {
+  connection: {
+    url: process.env.REDIS_URL,
+    tls: {},
+  },
+})
+
 const mailQueue = new Queue('mail', {
   connection: { 
     url: process.env.REDIS_URL,
@@ -80,6 +88,26 @@ export const auth = betterAuth({
         required: true,
         defaultValue: 'customer',
         input: false, // never set by client
+      },
+    },
+  },
+
+  // Tag the newsletter subscriber record when a new account is created.
+  // This file runs outside Nest DI, so it only enqueues the job — the
+  // SubscribersProcessor performs the actual upsert and audience sync.
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            await subscribersQueue.add('tag-registered-subscriber', {
+              userId: user.id,
+              email: user.email,
+            })
+          } catch (err) {
+            console.error(`[Auth] Failed to queue subscriber tagging for ${user.email}:`, err)
+          }
+        },
       },
     },
   },
