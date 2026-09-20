@@ -36,12 +36,26 @@ export class ReviewsService {
             throw new ConflictException('You have already reviewed this product')
         }
 
+        // §8.1 — purchase verification: a review is only allowed for products the user has bought
+        const hasPurchased = await this.prisma.client.order.findFirst({
+            where: {
+                userId,
+                status: { in: ['paid', 'shipped', 'delivered'] },
+                items: { some: { productId: product.id } },
+            },
+        })
+
+        if (!hasPurchased) {
+            throw new ForbiddenException('You can only review products you have purchased.')
+        }
+
         return this.prisma.client.review.create({
             data: {
                 rating: dto.rating,
                 comment: dto.comment,
                 productId: product.id,
                 userId,
+                status: 'pending',
             },
             // return reviewer's name alongside the review
             include: {
@@ -71,7 +85,7 @@ export class ReviewsService {
         }
 
         const reviews = await this.prisma.client.review.findMany({
-            where: { productId: product.id },
+            where: { productId: product.id, status: 'approved' },
             orderBy: { createdAt: 'desc' },
             include: {
                 user: {

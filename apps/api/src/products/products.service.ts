@@ -117,6 +117,7 @@ export class ProductsService {
                 subcategory: { select: { name: true, slug: true } },
                 // include reviews so the product detail page can show ratings and review cards
                 reviews: {
+                    where: { status: 'approved' },
                     include: {
                         // include reviewer name to display on each review card
                         user: { select: { firstName: true, lastName: true } },
