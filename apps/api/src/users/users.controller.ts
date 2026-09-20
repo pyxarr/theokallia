@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Patch, Query } from '@nestjs/common'
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common'
 import { AllowAnonymous, Session, UserSession } from '@thallesp/nestjs-better-auth'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { SetVipDto } from './dto/set-vip.dto'
 import { UsersService } from './users.service'
+import { RolesGuard, Roles } from '../auth/guards/roles.guard'
 
 @Controller('users')
 export class UsersController {
@@ -31,5 +33,14 @@ export class UsersController {
   @Patch('me')
   async updateMe(@Session() session: UserSession, @Body() dto: UpdateUserDto) {
     return this.usersService.updateMe(session.user.id, dto)
+  }
+
+  // PATCH /users/:id/vip
+  // Admin-only manual override of a customer's VIP status.
+  @Patch(':id/vip')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async setVip(@Param('id') id: string, @Body() dto: SetVipDto) {
+    return this.usersService.setVip(id, dto.isVip)
   }
 }

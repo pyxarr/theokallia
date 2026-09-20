@@ -12,6 +12,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('orders') private ordersQueue: Queue,
+    @InjectQueue('mail') private mailQueue: Queue,
     private couponsService: CouponsService,
   ) {}
 
@@ -280,7 +281,7 @@ const order = await tx.order.create({
   }
 
   async markAsPaid(orderId: string) {
-    return this.prisma.client.$transaction(async (tx) => {
+    const paidOrder = await this.prisma.client.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
         include: { reservations: true },
@@ -306,5 +307,90 @@ const order = await tx.order.create({
         data: { status: 'paid' },
       })
     })
+
+    // §7.1 — VIP qualification is evaluated only after the paid order is committed
+    await this.evaluateVip(paidOrder.userId)
+
+    return paidOrder
+  }
+
+  /**
+   * Promotes a customer to VIP once they cross either SiteConfig threshold
+   * (order count or lifetime spend), then alerts the business and tags their
+   * subscriber record. No-op when SiteConfig is missing or the customer is
+   * already VIP, so repeated payments never double-fire side effects.
+   */
+  private async evaluateVip(userId: string) {
+    const config = await this.prisma.client.siteConfig.findFirst()
+
+    if (!config) {
+      return
+    }
+
+    const user = await this.prisma.client.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user || user.isVip) {
+      return
+    }
+
+    const completedOrders = await this.prisma.client.order.findMany({
+      where: { userId, status: { in: ['paid', 'shipped', 'delivered'] } },
+      select: { total: true },
+    })
+
+    const totalOrders = completedOrders.length
+    const totalSpend = completedOrders.reduce((sum, order) => sum + order.total, 0)
+
+    const qualifies =
+      totalOrders >= config.vipOrderThreshold || totalSpend >= config.vipSpendThreshold
+
+    if (!qualifies) {
+      return
+    }
+
+    const vipSince = new Date()
+
+    await this.prisma.client.user.update({
+      where: { id: userId },
+      data: { isVip: true, vipSince },
+    })
+
+    // §7.2 Side Effect A — alert the business. Payload mirrors VipNotificationEmailProps
+    await this.mailQueue.add('send-vip-notification', {
+      customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),
+      customerEmail: user.email,
+      totalOrders,
+      totalSpend,
+      dateAchieved: vipSince.toISOString(),
+    })
+
+    // §7.2 Side Effect B — tag the subscriber record
+    await this.tagVipSubscriber(user.email, user.id)
+  }
+
+  /**
+   * Adds the "vip" tag to a customer's subscriber record, creating the record
+   * if the customer has never subscribed. Existing tags are preserved.
+   */
+  private async tagVipSubscriber(email: string, userId: string) {
+    const subscriber = await this.prisma.client.subscriber.findUnique({
+      where: { email },
+    })
+
+    if (!subscriber) {
+      await this.prisma.client.subscriber.create({
+        data: { email, userId, tags: ['registered', 'vip'] },
+      })
+      return
+    }
+
+    if (!subscriber.tags.includes('vip')) {
+      await this.prisma.client.subscriber.update({
+        where: { email },
+        data: { tags: [...subscriber.tags, 'vip'] },
+      })
+    }
   }
 }

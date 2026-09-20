@@ -43,6 +43,7 @@ import * as Joi from 'joi'
         CLOUDINARY_CLOUD_NAME: Joi.string().required(),
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
+        ADMIN_ALERT_EMAIL: Joi.string().email().optional(),
       }),
     }),
     // Register BullMQ globally — all queues use this Redis connection

@@ -15,6 +15,14 @@ interface OrderConfirmationJobData {
   items: { name: string; quantity: number }[]
 }
 
+interface VipNotificationJobData {
+  customerName: string
+  customerEmail: string
+  totalOrders: number
+  totalSpend: number
+  dateAchieved: string
+}
+
 // Processes all jobs on the 'mail' queue
 // BullMQ automatically retries failed jobs with backoff
 @Processor('mail')
@@ -37,6 +45,9 @@ export class MailProcessor extends WorkerHost {
             break
           case 'send-order-confirmation':
             await this.handleSendOrderConfirmation(job as Job<OrderConfirmationJobData>)
+            break
+          case 'send-vip-notification':
+            await this.handleSendVipNotification(job as Job<VipNotificationJobData>)
             break
           default:
             throw new Error(`Unknown job name: ${job.name}`)
@@ -99,6 +110,26 @@ export class MailProcessor extends WorkerHost {
           <p><strong>Items:</strong></p>
           <ul>${itemsList}</ul>
           <p>We will notify you once your order has been shipped.</p>
+        </div>
+      `,
+    })
+  }
+
+  private async handleSendVipNotification(job: Job<VipNotificationJobData>): Promise<void> {
+    const adminEmail = process.env.ADMIN_ALERT_EMAIL ?? 'hello@theokallia.com'
+
+    await this.mailService.sendEmail({
+      to: adminEmail,
+      subject: 'New VIP Customer - THEOKALLIA',
+      html: `
+        <div style="font-family: serif; max-width: 480px; margin: 0 auto;">
+          <h2 style="letter-spacing: 0.2em;">THEOKALLIA</h2>
+          <p>A customer has qualified for VIP status.</p>
+          <p><strong>Name:</strong> ${job.data.customerName}</p>
+          <p><strong>Email:</strong> ${job.data.customerEmail}</p>
+          <p><strong>Qualifying orders:</strong> ${job.data.totalOrders}</p>
+          <p><strong>Lifetime spend:</strong> ₦${job.data.totalSpend.toLocaleString()}</p>
+          <p><strong>Achieved:</strong> ${job.data.dateAchieved}</p>
         </div>
       `,
     })

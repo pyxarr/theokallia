@@ -10,9 +10,10 @@ import { ShippingZonesModule } from './shipping-zones/shipping-zones.module'
 @Module({
   imports: [
     PrismaModule,
-    BullModule.registerQueue({
-      name: 'orders',
-    }),
+    BullModule.registerQueue(
+      { name: 'orders' },
+      { name: 'mail' },
+    ),
     CouponsModule,
     ShippingZonesModule,
   ],
@@ -20,4 +21,4 @@ import { ShippingZonesModule } from './shipping-zones/shipping-zones.module'
   providers: [OrdersService, OrdersProcessor],
   exports: [OrdersService],
 })
-export class OrdersModule {}
+export class OrdersModule { }

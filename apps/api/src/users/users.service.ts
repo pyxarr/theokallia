@@ -45,4 +45,21 @@ export class UsersService {
 
     return user
   }
+
+  // Manually set a customer's VIP status (admin only).
+  // Turning VIP on stamps vipSince; turning it off clears the flag but
+  // keeps vipSince as a record of when they qualified.
+  async setVip(userId: string, isVip: boolean) {
+    await this.findById(userId)
+
+    const user = await this.prisma.client.user.update({
+      where: { id: userId },
+      data: {
+        isVip,
+        ...(isVip ? { vipSince: new Date() } : {}),
+      },
+    })
+
+    return user
+  }
 }
