@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -15,6 +16,7 @@ import { AllowAnonymous } from '@thallesp/nestjs-better-auth'
 import { ContentService } from './content.service'
 import { CreateContentBlockDto } from './dto/create-content-block.dto'
 import { UpdateContentBlockDto } from './dto/update-content-block.dto'
+import { FilterContentDto } from './dto/filter-content.dto'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/guards/roles.guard'
 
@@ -29,15 +31,29 @@ export class ContentController {
   constructor(private readonly contentService: ContentService) {}
 
   /**
-   * GET /content — returns all blocks sorted by sortOrder.
-   * The frontend calls this on page load to render hero, promotions, banners, etc.
+   * GET /content — returns active blocks currently inside their display window,
+   * sorted by sortOrder. Optional ?type= narrows the result to one placement.
    * No auth required — homepage must load for all visitors.
    */
   @Get()
   @AllowAnonymous()
-  @ApiOperation({ summary: 'List all content blocks sorted by sortOrder' })
-  findAll() {
-    return this.contentService.findAll()
+  @ApiOperation({ summary: 'List active, in-window content blocks (optional type filter)' })
+  findAll(@Query() filters: FilterContentDto) {
+    return this.contentService.findAll(filters)
+  }
+
+  /**
+   * GET /content/all - returns every block regardless of active state or schedule.
+   * Admin only. Powers the content manager so scheduled and inactive blocks stay editable.
+   * Declared before :id so "all" is not captured as a route parameter.
+   */
+  @Get('all')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all content blocks incl. inactive and scheduled (admin only)' })
+  findAllForAdmin() {
+    return this.contentService.findAllForAdmin()
   }
 
   /**

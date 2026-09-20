@@ -2,6 +2,7 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateContentBlockDto } from './dto/create-content-block.dto'
 import { UpdateContentBlockDto } from './dto/update-content-block.dto'
+import { FilterContentDto } from './dto/filter-content.dto'
 
 @Injectable()
 export class ContentService {
@@ -12,7 +13,28 @@ export class ContentService {
    * The admin dashboard uses this to render the homepage builder.
    * Public — the frontend fetches this to render homepage sections dynamically.
    */
-  async findAll() {
+  async findAll(filters: FilterContentDto = {}) {
+    const now = new Date()
+
+    return this.prisma.client.contentBlock.findMany({
+      where: {
+        active: true,
+        ...(filters.type ? { type: filters.type } : {}),
+        // Two independent windows: startsAt must have opened, endsAt must not have closed
+        AND: [
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+        ],
+      },
+      orderBy: { sortOrder: 'asc' },
+    })
+  }
+
+  /**
+   * Returns every content block regardless of active state or schedule,
+   * sorted by sortOrder ascending. Used by the admin content manager.
+   */
+  async findAllForAdmin() {
     return this.prisma.client.contentBlock.findMany({
       orderBy: { sortOrder: 'asc' },
     })
