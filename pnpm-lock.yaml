@@ -69,6 +69,9 @@ importers:
       '@thallesp/nestjs-better-auth':
         specifier: ^2.6.1
         version: 2.6.1(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)(better-auth@1.6.23(@cloudflare/workers-types@5.20260919.1)(@opentelemetry/api@1.9.1)(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(magicast@0.5.5)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.2))(typescript@5.9.2))(mysql2@3.15.3)(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.22.0)(prisma@7.8.0(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(magicast@0.5.5)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.2))(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(express@5.2.1)(qs@6.15.3)(typescript@5.9.2)
+      '@theokallia/emails':
+        specifier: workspace:*
+        version: link:../../packages/emails
       '@theokallia/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -126,6 +129,15 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.22.0
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+      react-email:
+        specifier: 6.1.4
+        version: 6.1.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2

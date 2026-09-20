@@ -11,16 +11,16 @@ const prisma = new PrismaClient({
 })
 
 // Mail queue — mirrors the BullMQ queue in MailModule
-// Subscribers queue — mirrors the BullMQ queue in SubscribersModule
-const subscribersQueue = new Queue('subscribers', {
-  connection: {
+const mailQueue = new Queue('mail', {
+  connection: { 
     url: process.env.REDIS_URL,
     tls: {},
   },
 })
 
-const mailQueue = new Queue('mail', {
-  connection: { 
+// Subscribers queue — mirrors the BullMQ queue in SubscribersModule
+const subscribersQueue = new Queue('subscribers', {
+  connection: {
     url: process.env.REDIS_URL,
     tls: {},
   },
@@ -41,7 +41,7 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }) => {
       try {
-        await mailQueue.add('send-reset-password', { email: user.email, url })
+        await mailQueue.add('send-reset-password', { email: user.email, firstName: user.name?.split(' ')[0] ?? 'there', url })
         console.log(`[Auth] Successfully queued reset password email for ${user.email}`)
       } catch (err) {
         console.error(`[Auth] Failed to queue reset password email for ${user.email}:`, err)
@@ -53,7 +53,7 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
       try {
-        await mailQueue.add('send-verification-email', { email: user.email, url })
+        await mailQueue.add('send-verification-email', { email: user.email, firstName: user.name?.split(' ')[0] ?? 'there', url })
         console.log(`[Auth] Successfully queued verification email for ${user.email}`)
       } catch (err) {
         console.error(`[Auth] Failed to queue verification email for ${user.email}:`, err)

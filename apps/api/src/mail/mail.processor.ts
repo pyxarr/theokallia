@@ -1,18 +1,36 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq'
 import { Job } from 'bullmq'
 import { Logger } from '@nestjs/common'
+import { render } from 'react-email'
+import {
+  VerificationEmail,
+  ResetPasswordEmail,
+  OrderConfirmationEmail,
+  VipNotificationEmail,
+} from '@theokallia/emails'
 import { MailService } from './mail.service'
 
 interface LinkJobData {
   email: string
   url: string
+  firstName: string
 }
 
 interface OrderConfirmationJobData {
   email: string
+  firstName: string
   orderId: string
   total: number
-  items: { name: string; quantity: number }[]
+  subtotal: number
+  discount: number
+  shippingFee: number
+  shippingAddress: {
+    street: string
+    city: string
+    state: string
+    country: string
+  }
+  items: { name: string; quantity: number; price: number }[]
 }
 
 interface VipNotificationJobData {
@@ -62,76 +80,58 @@ export class MailProcessor extends WorkerHost {
   private async handleSendVerificationEmail(
     job: Job<LinkJobData>,
   ): Promise<void> {
+    const html = await render(VerificationEmail({ firstName: job.data.firstName, url: job.data.url }))
     await this.mailService.sendEmail({
       to: job.data.email,
       subject: 'Verify your Theokallia email',
-      html: `
-        <div style="font-family: serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="letter-spacing: 0.2em;">THEOKALLIA</h2>
-          <p>Click the link below to verify your email address:</p>
-          <a href="${job.data.url}" style="color: #7E22CE;">Verify my email</a>
-          <p>This link expires in 1 hour.</p>
-          <p>If you did not create an account, please ignore this email.</p>
-        </div>
-      `,
+      html,
     })
   }
 
   private async handleSendResetPassword(job: Job<LinkJobData>): Promise<void> {
+    const html = await render(ResetPasswordEmail({ firstName: job.data.firstName, url: job.data.url }))
     await this.mailService.sendEmail({
       to: job.data.email,
       subject: 'Reset your Theokallia password',
-      html: `
-        <div style="font-family: serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="letter-spacing: 0.2em;">THEOKALLIA</h2>
-          <p>Click the link below to reset your password:</p>
-          <a href="${job.data.url}" style="color: #7E22CE;">Reset my password</a>
-          <p>This link expires in 1 hour.</p>
-          <p>If you did not request this, you can safely ignore this email.</p>
-        </div>
-      `,
+      html,
     })
   }
 
   private async handleSendOrderConfirmation(job: Job<OrderConfirmationJobData>): Promise<void> {
-    const itemsList = job.data.items
-      .map((item) => `<li>${item.quantity}x ${item.name}</li>`)
-      .join('')
-
+    const html = await render(
+      OrderConfirmationEmail({
+        firstName: job.data.firstName,
+        orderId: job.data.orderId,
+        items: job.data.items,
+        subtotal: job.data.subtotal,
+        discount: job.data.discount,
+        shippingFee: job.data.shippingFee,
+        total: job.data.total,
+        shippingAddress: job.data.shippingAddress,
+      }),
+    )
     await this.mailService.sendEmail({
       to: job.data.email,
       subject: 'Order Confirmed - THEOKALLIA',
-      html: `
-        <div style="font-family: serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="letter-spacing: 0.2em;">THEOKALLIA</h2>
-          <p>Thank you for your order! We have received your payment and are preparing your pieces.</p>
-          <p><strong>Order ID:</strong> ${job.data.orderId}</p>
-          <p><strong>Total:</strong> ${job.data.total}</p>
-          <p><strong>Items:</strong></p>
-          <ul>${itemsList}</ul>
-          <p>We will notify you once your order has been shipped.</p>
-        </div>
-      `,
+      html,
     })
   }
 
   private async handleSendVipNotification(job: Job<VipNotificationJobData>): Promise<void> {
     const adminEmail = process.env.ADMIN_ALERT_EMAIL ?? 'hello@theokallia.com'
-
+    const html = await render(
+      VipNotificationEmail({
+        customerName: job.data.customerName,
+        customerEmail: job.data.customerEmail,
+        totalOrders: job.data.totalOrders,
+        totalSpend: job.data.totalSpend,
+        dateAchieved: job.data.dateAchieved,
+      }),
+    )
     await this.mailService.sendEmail({
       to: adminEmail,
       subject: 'New VIP Customer - THEOKALLIA',
-      html: `
-        <div style="font-family: serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="letter-spacing: 0.2em;">THEOKALLIA</h2>
-          <p>A customer has qualified for VIP status.</p>
-          <p><strong>Name:</strong> ${job.data.customerName}</p>
-          <p><strong>Email:</strong> ${job.data.customerEmail}</p>
-          <p><strong>Qualifying orders:</strong> ${job.data.totalOrders}</p>
-          <p><strong>Lifetime spend:</strong> ₦${job.data.totalSpend.toLocaleString()}</p>
-          <p><strong>Achieved:</strong> ${job.data.dateAchieved}</p>
-        </div>
-      `,
+      html,
     })
   }
 }

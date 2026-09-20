@@ -130,11 +130,17 @@ export class PaymentsService {
     // Queue the confirmation email
     await this.mailQueue.add('send-order-confirmation', {
       email: order.user?.email,
+      firstName: order.user?.name?.split(' ')[0] ?? 'there',
       orderId: order.id,
       total: order.total,
+      subtotal: order.total - order.shippingFee + order.discount,
+      discount: order.discount,
+      shippingFee: order.shippingFee,
+      shippingAddress: order.shippingAddress ?? { street: '', city: '', state: '', country: '' },
       items: order.items.map(item => ({
         name: item.product.name,
-        quantity: item.quantity
+        quantity: item.quantity,
+        price: item.price
       })),
     })
   }
