@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useCart, useUpdateCartItem } from '@/lib/hooks/use-cart'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
+import { useCurrency } from '@/lib/hooks/use-currency'
 import CartItem from '@/components/cart/cart-item'
 import GuestCartItem from '@/components/cart/guest-cart-item'
 import { useEffect } from 'react'
@@ -18,6 +19,7 @@ const DELIVERY_FEE = 10000
 export default function CartPage() {
   const router = useRouter()
   const { isAuthenticated, openAuthModal, setRedirectTo } = useAuthStore()
+  const { formatPrice } = useCurrency()
 
   // authenticated cart — only fetches when user is logged in
   const { data: dbCart, isLoading } = useCart(isAuthenticated)
@@ -147,16 +149,16 @@ export default function CartPage() {
                     Subtotal
                   </h2>
                   <span className="text-2xl font-medium">
-                    ₦{subtotal.toLocaleString()}.00
+                    {formatPrice(subtotal)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <span>Delivery fee</span>
-                  <span>₦{DELIVERY_FEE.toLocaleString()}</span>
+                  <span>{formatPrice(DELIVERY_FEE)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4 text-sm font-medium">
                   <span>Total</span>
-                  <span>₦{orderTotal.toLocaleString()}.00</span>
+                  <span>{formatPrice(orderTotal)}</span>
                 </div>
                 <div className="flex flex-col gap-3 text-sm text-gray-700">
                   <div className="flex items-center gap-3">

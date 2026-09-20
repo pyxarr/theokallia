@@ -10,6 +10,7 @@ import { useAddToCart, useCart } from '@/lib/hooks/use-cart'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
 import type { Product } from '@/lib/hooks/use-products'
+import { useCurrency } from '@/lib/hooks/use-currency'
 import { useIsWishlisted, useToggleWishlist } from '@/lib/hooks/use-wishlist'
 import { Heart } from 'lucide-react'
 
@@ -20,6 +21,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const { isAuthenticated } = useAuthStore()
   const [showAdded, setShowAdded] = useState(false)
+  const { formatPrice } = useCurrency()
 
   const { mutate: addToCart } =
     useAddToCart(isAuthenticated)
@@ -62,6 +64,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
               quantity: 1,
               name: product.name,
               price: product.price,
+              usdPrice: product.usdPrice,
+              gbpPrice: product.gbpPrice,
               image: product.assets[0]?.publicId || '/placeholder-image.jpg',
               categoryName: product.category.name,
               subcategoryName: product.subcategory?.name || null,
@@ -144,7 +148,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="mt-2 flex items-center justify-between text-lg text-gray-900">
           <span className="text-xl">{product.name}</span>
           <span className="font-le-jour">
-            ₦{product.price.toLocaleString()}
+            {formatPrice(product.price, product)}
           </span>
         </div>
         <p className="text-xl font-bold text-gray-900">

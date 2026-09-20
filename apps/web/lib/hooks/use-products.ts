@@ -42,6 +42,8 @@ export interface Product {
   slug: string
   description: string
   price: number
+  usdPrice: number | null
+  gbpPrice: number | null
   assets: Asset[]
   inStock: boolean
   stock: number

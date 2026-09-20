@@ -5,6 +5,7 @@ import { Button } from '../ui/button'
 import { useRemoveCartItem } from '@/lib/hooks/use-cart'
 import { useToggleWishlist, useWishlist } from '@/lib/hooks/use-wishlist'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
 
 interface Asset {
@@ -27,6 +28,8 @@ interface CartItemProps {
       name: string
       slug: string
       price: number
+      usdPrice?: number | null
+      gbpPrice?: number | null
       assets: Asset[]
       inStock: boolean
       stock: number
@@ -39,6 +42,7 @@ interface CartItemProps {
 
 export default function CartItem({ item, onUpdate }: CartItemProps) {
   const { isAuthenticated } = useAuthStore()
+  const { format, convert } = useCurrency()
 
   const { mutate: removeItem, isPending: isRemoving } = useRemoveCartItem()
 
@@ -94,7 +98,7 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
             </p>
           </div>
           <p className="font-allure text-lg font-semibold text-gray-900">
-            ₦{(item.product.price * item.quantity).toLocaleString()}
+            {format(convert(item.product.price, item.product) * item.quantity)}
           </p>
         </div>
 

@@ -13,6 +13,7 @@ import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
 import { useCart } from '@/lib/hooks/use-cart'
 import { useWishlist } from '@/lib/hooks/use-wishlist'
 import { useGuestWishlistStore } from '@/lib/stores/guest-wishlist-store'
+import CurrencySwitcher from './currency-switcher'
 
 const links = [
   { name: 'Home', href: '/' },
@@ -83,6 +84,8 @@ const Navbar = ({ onOpenLogin, onOpenSignUp }: NavbarProps) => {
       </div>
 
       <div className="flex items-center gap-8">
+        <CurrencySwitcher />
+
         <div className="flex items-center gap-4">
           {/* render nothing while session check is in flight — prevents auth flash */}
           {!isLoading &&

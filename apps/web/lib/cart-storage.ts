@@ -6,6 +6,8 @@ export interface GuestCartItemType {
     quantity: number
     name: string
     price: number
+    usdPrice?: number | null
+    gbpPrice?: number | null
     image: string
     categoryName: string
     subcategoryName: string | null

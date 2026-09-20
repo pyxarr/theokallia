@@ -19,6 +19,7 @@ import { RateLimitModule } from './rate-limit/rate-limit.module'
 import { UploadModule } from './upload/upload.module'
 import { ContentModule } from './content/content.module'
 import { SubscribersModule } from './subscribers/subscribers.module'
+import { CurrencyModule } from './currency/currency.module'
 import { CouponsModule } from './coupons/coupons.module'
 import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
 import { auth } from './auth/auth'
@@ -74,6 +75,7 @@ import * as Joi from 'joi'
     UploadModule,
     ContentModule,
     SubscribersModule,
+    CurrencyModule,
   ],
   providers: [
     {

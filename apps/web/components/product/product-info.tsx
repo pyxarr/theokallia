@@ -13,6 +13,7 @@ import { useToggleWishlist, useIsWishlisted } from '@/lib/hooks/use-wishlist'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
 import { toast } from 'sonner'
 import type { Product } from '@/lib/hooks/use-products'
+import { useCurrency } from '@/lib/hooks/use-currency'
 
 interface ProductInfoProps {
   product: Product
@@ -20,6 +21,7 @@ interface ProductInfoProps {
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const { isAuthenticated } = useAuthStore()
+  const { formatPrice } = useCurrency()
 
   const { mutate: addToCart, isPending: isAdding } =
     useAddToCart(isAuthenticated)
@@ -168,7 +170,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           </button>
         </div>
         <p className="mt-4 font-le-jour text-3xl text-gray-900">
-          ₦{product.price.toLocaleString()}
+          {formatPrice(product.price, product)}
         </p>
       </div>
 

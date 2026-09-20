@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
 import { useGuestWishlistStore } from '@/lib/stores/guest-wishlist-store'
+import { useCurrencyStore } from '@/lib/stores/currency-store'
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -30,10 +31,12 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   // must run client-side only — localStorage is not available on the server
   const { hydrate: hydrateGuestCart } = useGuestCartStore()
   const { hydrate: hydrateWishlist } = useGuestWishlistStore()
+  const { hydrate: hydrateCurrency } = useCurrencyStore()
 
   useEffect(() => {
     void hydrateGuestCart() // async — validates stock against API before setting state
     hydrateWishlist()       // sync — just reads localStorage and sets state
+    hydrateCurrency()       // sync — resolves currency from storage, cookie, or geo
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openLogin = () => {

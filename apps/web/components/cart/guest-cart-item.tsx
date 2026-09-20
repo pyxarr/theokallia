@@ -5,6 +5,7 @@ import { Button } from '../ui/button'
 import type { GuestCartItemType } from '@/lib/cart-storage'
 import { useToggleWishlist } from '@/lib/hooks/use-wishlist'
 import { useGuestWishlistStore } from '@/lib/stores/guest-wishlist-store'
+import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
 
 interface GuestCartItemProps {
@@ -23,6 +24,7 @@ export default function GuestCartItem({
 
   // read from Zustand store — reactive, updates immediately when wishlist changes
   const { items: guestWishlistItems } = useGuestWishlistStore()
+  const { format, convert } = useCurrency()
 
   // check if this product is already in the guest wishlist
   const isWishlisted = guestWishlistItems.some((i) => i.id === item.productId)
@@ -85,7 +87,7 @@ export default function GuestCartItem({
             </p>
           </div>
           <p className="font-allure text-lg font-semibold text-gray-900">
-            ₦{(item.price * item.quantity).toLocaleString()}
+            {format(convert(item.price, item) * item.quantity)}
           </p>
         </div>
 

@@ -7,6 +7,7 @@ import { useRemoveWishlistItem } from '@/lib/hooks/use-wishlist'
 import { useAddToCart, useCart } from '@/lib/hooks/use-cart'
 import { useGuestWishlistStore } from '@/lib/stores/guest-wishlist-store'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
+import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
 
 export interface Asset {
@@ -24,6 +25,8 @@ export interface WishlistItemProduct {
   name: string
   slug: string
   price: number
+  usdPrice?: number | null
+  gbpPrice?: number | null
   assets: Asset[]
   inStock: boolean
   stock: number
@@ -56,6 +59,7 @@ export default function WishlistItem({
   // cart data needed to check if the item is already at its stock limit
   const { data: dbCart } = useCart(isAuthenticated)
   const { items: guestItems } = useGuestCartStore()
+  const { formatPrice } = useCurrency()
 
   // resolve product from whichever shape was passed — must happen before any product references
   const product = item?.product ?? guestProduct
@@ -122,6 +126,8 @@ export default function WishlistItem({
             quantity: 1,
             name: product.name,
             price: product.price,
+            usdPrice: product.usdPrice,
+            gbpPrice: product.gbpPrice,
             image: product.assets[0]?.publicId || '/placeholder-image.jpg',
             categoryName: product.category.name,
             subcategoryName: product.subcategory?.name || null,
@@ -167,7 +173,7 @@ export default function WishlistItem({
             </p>
           </div>
           <p className="font-allure text-lg font-semibold text-gray-900">
-            ₦{product.price.toLocaleString()}
+            {formatPrice(product.price, product)}
           </p>
         </div>
 

@@ -9,12 +9,15 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useCategories } from '@/lib/hooks/use-categories'
+import { useCurrency } from '@/lib/hooks/use-currency'
 
-const priceRanges = [
-  { label: 'Under ₦20,000', min: undefined, max: 20000 },
-  { label: '₦20,000 – ₦50,000', min: 20000, max: 50000 },
-  { label: '₦50,000 – ₦100,000', min: 50000, max: 100000 },
-  { label: 'Above ₦100,000', min: 100000, max: undefined },
+// Ranges are defined in NGN — the backend filters on Product.price in NGN.
+// Only the visible label is converted to the active currency.
+const priceRanges: { min?: number; max?: number }[] = [
+  { max: 20000 },
+  { min: 20000, max: 50000 },
+  { min: 50000, max: 100000 },
+  { min: 100000 },
 ]
 
 const sortOptions = [
@@ -57,6 +60,14 @@ const Checkbox = ({
 const SidebarFilter = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { formatPrice } = useCurrency()
+
+  /** Builds a currency-aware label for an NGN price range. */
+  const rangeLabel = ({ min, max }: { min?: number; max?: number }) => {
+    if (min === undefined && max !== undefined) return `Under ${formatPrice(max)}`
+    if (max === undefined && min !== undefined) return `Above ${formatPrice(min)}`
+    return `${formatPrice(min ?? 0)} – ${formatPrice(max ?? 0)}`
+  }
   const {
     data: categories = [],
     isLoading: categoriesLoading,
@@ -196,14 +207,14 @@ const SidebarFilter = () => {
           <AccordionContent className="pt-1 pb-4 text-xl text-gray-900">
             <ul className="flex flex-col gap-3">
               {priceRanges.map((range) => (
-                <li key={range.label}>
+                <li key={`${range.min ?? 'any'}-${range.max ?? 'any'}`}>
                   <Checkbox
                     checked={
                       activeMinPrice === range.min &&
                       activeMaxPrice === range.max
                     }
                     onChange={() => togglePrice(range.min, range.max)}
-                    label={range.label}
+                    label={rangeLabel(range)}
                   />
                 </li>
               ))}

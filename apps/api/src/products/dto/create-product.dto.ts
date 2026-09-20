@@ -27,6 +27,18 @@ export class CreateProductDto {
   @Min(0)
   price: number
 
+  @ApiPropertyOptional({ example: 30.5, description: 'Optional fixed price in USD' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  usdPrice?: number
+
+  @ApiPropertyOptional({ example: 24, description: 'Optional fixed price in GBP' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  gbpPrice?: number
+
   @ApiPropertyOptional({ example: ['public_id_1', 'public_id_2'] })
   @IsOptional()
   @IsArray()

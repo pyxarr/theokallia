@@ -3,11 +3,18 @@
 import { Package, Shield, Truck } from 'lucide-react'
 import { useCart } from '@/lib/hooks/use-cart'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { useCurrency } from '@/lib/hooks/use-currency'
 
 type SummaryItem = {
   id: string
   quantity: number
-  product: { name: string; price?: number; images?: string[] }
+  product: {
+    name: string
+    price?: number
+    images?: string[]
+    usdPrice?: number | null
+    gbpPrice?: number | null
+  }
   price?: number
 }
 
@@ -20,6 +27,7 @@ interface OrderSummaryProps {
 export default function OrderSummary({ shippingFee = 0, discount = 0, couponCode }: OrderSummaryProps) {
   const { isAuthenticated } = useAuthStore()
   const { data: dbCart } = useCart(isAuthenticated)
+  const { formatPrice, format, convert } = useCurrency()
 
   const items = dbCart?.items ?? []
   const subtotal = dbCart?.total ?? 0
@@ -45,7 +53,7 @@ export default function OrderSummary({ shippingFee = 0, discount = 0, couponCode
                 {item.product.name} × {item.quantity}
               </span>
               <span className="font-medium">
-                ₦{(displayPrice * item.quantity).toLocaleString()}
+                {format(convert(displayPrice, item.product) * item.quantity)}
               </span>
             </div>
             )
@@ -55,21 +63,21 @@ export default function OrderSummary({ shippingFee = 0, discount = 0, couponCode
         <div className="border-t border-gray-100 pt-4 flex flex-col gap-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Subtotal</span>
-            <span>₦{subtotal.toLocaleString()}</span>
+            <span>{formatPrice(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Delivery fee</span>
-            <span>₦{shippingFee.toLocaleString()}</span>
+            <span>{formatPrice(shippingFee)}</span>
           </div>
           {discount > 0 && (
             <div className="flex items-center justify-between text-sm text-green-600">
               <span>Discount {couponCode ? `(${couponCode})` : ''}</span>
-              <span>−₦{discount.toLocaleString()}</span>
+              <span>−{formatPrice(discount)}</span>
             </div>
           )}
           <div className="flex items-center justify-between border-t border-gray-100 pt-4 text-lg font-medium">
             <span>Total</span>
-            <span>₦{orderTotal.toLocaleString()}</span>
+            <span>{formatPrice(orderTotal)}</span>
           </div>
         </div>
 

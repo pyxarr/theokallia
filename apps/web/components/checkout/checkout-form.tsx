@@ -8,6 +8,7 @@ import { useCreateOrder } from '@/lib/hooks/use-orders'
 import { useValidateCoupon } from '@/lib/hooks/use-coupons'
 import { useCart } from '@/lib/hooks/use-cart'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -47,6 +48,7 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
   const [appliedDiscount, setAppliedDiscount] = useState(0)
   const [appliedCouponCode, setAppliedCouponCode] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
+  const { formatPrice } = useCurrency()
 
   const {
     register,
@@ -277,7 +279,7 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
         {couponError && <p className="text-xs text-red-500">{couponError}</p>}
         {couponResult && (
           <p className="text-xs text-green-600">
-            Coupon applied — ₦{couponResult.discount.toLocaleString()} off
+            Coupon applied — {formatPrice(couponResult.discount)} off
           </p>
         )}
       </div>
