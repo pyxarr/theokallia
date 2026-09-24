@@ -17,13 +17,18 @@ async function bootstrap() {
   app.use(cookieParser())
 
   // CORS — only allow frontend origins
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : [
+        'http://localhost:3000',
+        'http://localhost:3002',
+        'https://theokallia.vercel.app',
+        'https://theokallia.com',
+        'https://admin.theokallia.com',
+      ]
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://theokallia.vercel.app',
-      'https://theokallia.com',
-      'https://admin.theokallia.com',
-    ],
+    origin: corsOrigins,
     credentials: true,
   })
 

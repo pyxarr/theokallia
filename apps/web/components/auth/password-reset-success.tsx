@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { useForgotPassword } from '@/lib/hooks/use-auth'
 
@@ -6,7 +8,10 @@ interface PasswordResetSuccessProps {
   onContinue: () => void
 }
 
-export default function PasswordResetSuccess({ email, onContinue }: PasswordResetSuccessProps) {
+export default function PasswordResetSuccess({
+  email,
+  onContinue,
+}: PasswordResetSuccessProps) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [sentMessage, setSentMessage] = useState<string | null>(null)
   const { mutate: resendResetLink, isPending } = useForgotPassword()
@@ -75,8 +80,12 @@ export default function PasswordResetSuccess({ email, onContinue }: PasswordRese
         {isPending ? 'Sending...' : 'Resend link'}
       </button>
 
-      {serverError && <p className="mb-3 text-sm text-red-500">{serverError}</p>}
-      {sentMessage && <p className="mb-3 text-sm text-green-600">{sentMessage}</p>}
+      {serverError && (
+        <p className="mb-3 text-sm text-red-500">{serverError}</p>
+      )}
+      {sentMessage && (
+        <p className="mb-3 text-sm text-green-600">{sentMessage}</p>
+      )}
 
       <button
         onClick={onContinue}

@@ -5,6 +5,7 @@ import ProductInfo from '@/components/product/product-info'
 import ProductShipping from '@/components/product/product-shipping'
 import ProductRatingSummary from '@/components/product/product-rating-summary'
 import ProductReviews from '@/components/product/product-reviews'
+import WriteReviewForm from '@/components/product/write-review-form'
 import SimilarProducts from '@/components/product/similar-products'
 import { useProduct } from '@/lib/hooks/use-products'
 import { useReviews } from '@/lib/hooks/use-reviews'
@@ -50,7 +51,11 @@ export default function ProductPage() {
       <main className="mx-auto max-w-6xl px-6 py-12">
         {/* top section — images + info + shipping */}
         <div className="grid grid-cols-2 gap-12">
-          <ProductImages assets={product.assets} productName={product.name} slug={slug} />
+          <ProductImages
+            assets={product.assets}
+            productName={product.name}
+            slug={slug}
+          />
 
           <div className="flex flex-col gap-6">
             {/* pass full product — ProductInfo needs id, stock, images etc for cart + wishlist */}
@@ -99,6 +104,9 @@ export default function ProductPage() {
               </p>
             </div>
           )}
+
+          {/* write form renders itself only for buyers who haven't reviewed */}
+          <WriteReviewForm slug={slug} />
         </div>
 
         {/* similar products */}

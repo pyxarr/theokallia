@@ -6,6 +6,7 @@ import {
   VerificationEmail,
   ResetPasswordEmail,
   OrderConfirmationEmail,
+  ShippingUpdateEmail,
   VipNotificationEmail,
 } from '@theokallia/emails'
 import { MailService } from './mail.service'
@@ -41,9 +42,17 @@ interface VipNotificationJobData {
   dateAchieved: string
 }
 
+interface ShippingUpdateJobData {
+  email: string
+  firstName: string
+  orderId: string
+  trackingNumber: string
+}
+
 // Processes all jobs on the 'mail' queue
 // BullMQ automatically retries failed jobs with backoff
-@Processor('mail')
+// Concurrency limited to avoid overwhelming Resend rate limits
+@Processor('mail', { concurrency: 5 })
 export class MailProcessor extends WorkerHost {
   private readonly logger = new Logger(MailProcessor.name)
 
@@ -66,6 +75,9 @@ export class MailProcessor extends WorkerHost {
             break
           case 'send-vip-notification':
             await this.handleSendVipNotification(job as Job<VipNotificationJobData>)
+            break
+          case 'send-shipping-update':
+            await this.handleSendShippingUpdate(job as Job<ShippingUpdateJobData>)
             break
           default:
             throw new Error(`Unknown job name: ${job.name}`)
@@ -131,6 +143,21 @@ export class MailProcessor extends WorkerHost {
     await this.mailService.sendEmail({
       to: adminEmail,
       subject: 'New VIP Customer - THEOKALLIA',
+      html,
+    })
+  }
+
+  private async handleSendShippingUpdate(job: Job<ShippingUpdateJobData>): Promise<void> {
+    const html = await render(
+      ShippingUpdateEmail({
+        firstName: job.data.firstName,
+        orderId: job.data.orderId,
+        trackingNumber: job.data.trackingNumber,
+      }),
+    )
+    await this.mailService.sendEmail({
+      to: job.data.email,
+      subject: 'Your Order Has Shipped - THEOKALLIA',
       html,
     })
   }

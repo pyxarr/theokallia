@@ -1,5 +1,10 @@
+'use client'
+
 import { useEffect, useState } from 'react'
-import { useVerificationStatus, useResendVerification } from '@/lib/hooks/use-auth'
+import {
+  useVerificationStatus,
+  useResendVerification,
+} from '@/lib/hooks/use-auth'
 
 interface CheckEmailProps {
   email: string
@@ -11,7 +16,8 @@ export default function CheckEmail({ email, onVerified }: CheckEmailProps) {
   const [resendSuccess, setResendSuccess] = useState(false)
 
   const { data } = useVerificationStatus(email)
-  const { mutate: resendEmail, isPending: isPendingResend } = useResendVerification()
+  const { mutate: resendEmail, isPending: isPendingResend } =
+    useResendVerification()
 
   useEffect(() => {
     if (data?.verified) {
@@ -75,7 +81,8 @@ export default function CheckEmail({ email, onVerified }: CheckEmailProps) {
         className="mb-8 text-center text-sm leading-relaxed text-gray-500"
         style={{ fontFamily: 'var(--font-cormorant-garamond)' }}
       >
-        We sent you a verification link to <span className="font-medium text-gray-900">{email}</span>.
+        We sent you a verification link to{' '}
+        <span className="font-medium text-gray-900">{email}</span>.
         <br />
         Open it to finish creating your account.
       </p>
@@ -86,18 +93,20 @@ export default function CheckEmail({ email, onVerified }: CheckEmailProps) {
           className={`text-xs transition-colors ${
             timer > 0 || isPendingResend
               ? 'cursor-not-allowed text-gray-400'
-              : 'text-purple-600 underline-offset-4 hover:text-purple-700 underline'
+              : 'text-purple-600 underline underline-offset-4 hover:text-purple-700'
           }`}
           onClick={handleResend}
           disabled={timer > 0 || isPendingResend}
         >
-          {timer > 0 
-            ? `Resend link in ${timer}s` 
-            : isPendingResend ? 'Sending...' : 'Resend verification link'}
+          {timer > 0
+            ? `Resend link in ${timer}s`
+            : isPendingResend
+              ? 'Sending...'
+              : 'Resend verification link'}
         </button>
-        
+
         {resendSuccess && (
-          <p className="text-xs text-green-600 font-medium">
+          <p className="text-xs font-medium text-green-600">
             Verification link sent successfully!
           </p>
         )}

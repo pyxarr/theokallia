@@ -26,7 +26,8 @@
     "db:studio": "dotenv -e .env -- prisma studio",
     "seed:categories": "dotenv -e .env -- ts-node seed-categories.ts",
     "seed:products": "dotenv -e .env -- ts-node seed-products.ts",
-    "seed:zones": "dotenv -e .env -- ts-node seed-zones.ts"
+    "seed:zones": "dotenv -e .env -- ts-node seed-zones.ts",
+    "seed:admin": "dotenv -e .env -- ts-node seed-admin.ts"
   },
   "dependencies": {
     "@nestjs/bull": "^11.0.4",

@@ -12,7 +12,7 @@ const prisma = new PrismaClient({
 
 // Mail queue — mirrors the BullMQ queue in MailModule
 const mailQueue = new Queue('mail', {
-  connection: { 
+  connection: {
     url: process.env.REDIS_URL,
     tls: {},
   },
@@ -26,10 +26,22 @@ const subscribersQueue = new Queue('subscribers', {
   },
 })
 
+// Graceful shutdown for standalone clients (this file runs outside Nest DI)
+const shutdown = async () => {
+  await Promise.all([prisma.$disconnect(), mailQueue.close(), subscribersQueue.close()])
+  process.exit(0)
+}
+
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:3000'],
+  trustedOrigins: [
+    process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    process.env.ADMIN_URL ?? 'http://localhost:3002',
+  ],
 
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
