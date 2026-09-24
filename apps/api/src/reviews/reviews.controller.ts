@@ -3,9 +3,13 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common'
 import {
   ApiBearerAuth,
@@ -22,14 +26,50 @@ import {
 } from '@thallesp/nestjs-better-auth'
 import { CreateReviewDto } from './dto/create-review.dto'
 import { UpdateReviewDto } from './dto/update-review.dto'
+import {
+  AdminReviewsFilterDto,
+  ModerateReviewDto,
+} from './dto/admin-reviews.dto'
 import { ReviewsService } from './reviews.service'
+import { RolesGuard, Roles } from '../auth/guards/roles.guard'
 
 @ApiTags('Reviews')
 @Controller('products/:slug/reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  // Create Review
+  // ============ PUBLIC ENDPOINTS ============
+
+  @Get()
+  @AllowAnonymous()
+  @ApiOperation({ summary: 'Get all reviews for a product' })
+  @ApiParam({
+    name: 'slug',
+    description: 'Product slug',
+    example: 'temi-gold-bracelets',
+  })
+  @ApiResponse({ status: 200, description: 'Reviews retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  findAll(@Param('slug') slug: string) {
+    return this.reviewsService.findAllBySlug(slug)
+  }
+
+  @Get('eligibility')
+  @AllowAnonymous()
+  @OptionalAuth()
+  @ApiOperation({
+    summary: 'Whether the current visitor can review this product',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Product slug',
+    example: 'temi-gold-bracelets',
+  })
+  eligibility(@Param('slug') slug: string, @Session() session?: UserSession) {
+    return this.reviewsService.canReview(slug, session?.user?.id ?? null)
+  }
+
+  // ============ USER ENDPOINTS (authenticated) ============
 
   @Post()
   @ApiBearerAuth()
@@ -54,43 +94,6 @@ export class ReviewsController {
     return this.reviewsService.create(slug, session.user.id, dto)
   }
 
-  // List Reviews
-
-  @Get()
-  @AllowAnonymous()
-  @ApiOperation({ summary: 'Get all reviews for a product' })
-  @ApiParam({
-    name: 'slug',
-    description: 'Product slug',
-    example: 'temi-gold-bracelets',
-  })
-  @ApiResponse({ status: 200, description: 'Reviews retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  findAll(@Param('slug') slug: string) {
-    return this.reviewsService.findAllBySlug(slug)
-  }
-
-  // Review Eligibility
-  // Public so the page can render for anonymous visitors too — the response
-  // tells them to sign in rather than showing a form that would fail.
-
-  @Get('eligibility')
-  @AllowAnonymous()
-  @OptionalAuth()
-  @ApiOperation({
-    summary: 'Whether the current visitor can review this product',
-  })
-  @ApiParam({
-    name: 'slug',
-    description: 'Product slug',
-    example: 'temi-gold-bracelets',
-  })
-  eligibility(@Param('slug') slug: string, @Session() session?: UserSession) {
-    return this.reviewsService.canReview(slug, session?.user?.id ?? null)
-  }
-
-  // Update Review
-
   @Patch(':reviewId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update your own review' })
@@ -112,8 +115,6 @@ export class ReviewsController {
     return this.reviewsService.update(reviewId, session.user.id, dto)
   }
 
-  // Delete Review
-
   @Delete(':reviewId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a review — own review or admin' })
@@ -133,5 +134,47 @@ export class ReviewsController {
       session.user.id,
       session.user.role as string,
     )
+  }
+
+  // ============ ADMIN ENDPOINTS ============
+
+  @Get('admin')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List reviews for moderation (admin only)' })
+  findAllAdmin(@Query() filters: AdminReviewsFilterDto) {
+    return this.reviewsService.findAllAdmin(filters)
+  }
+
+  @Get('admin/counts')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Count reviews per status (admin only)' })
+  counts() {
+    return this.reviewsService.countByStatusAdmin()
+  }
+
+  @Patch('admin/:reviewId/status')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve or reject a review (admin only)' })
+  moderate(
+    @Param('reviewId') reviewId: string,
+    @Body() dto: ModerateReviewDto,
+  ) {
+    return this.reviewsService.moderate(reviewId, dto.status)
+  }
+
+  @Delete('admin/:reviewId')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete any review (admin only)' })
+  removeAdmin(@Param('reviewId') reviewId: string) {
+    return this.reviewsService.removeAdmin(reviewId)
   }
 }

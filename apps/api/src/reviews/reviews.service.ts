@@ -38,6 +38,10 @@ export class ReviewsService {
       where: { slug },
     })
 
+    if (!product) {
+      throw new NotFoundException(`Product with slug "${slug}" not found`)
+    }
+
     return this.prisma.client.review.create({
       data: {
         rating: dto.rating,

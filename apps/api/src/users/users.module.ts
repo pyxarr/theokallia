@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common'
 import { UsersController } from './users.controller'
-import { UsersAdminController } from './users-admin.controller'
 import { UsersService } from './users.service'
 
 // PrismaService is not imported here because PrismaModule is @Global()
 // It is automatically available to all modules in the app
 @Module({
-  controllers: [UsersController, UsersAdminController],
+  controllers: [UsersController],
   providers: [UsersService],
   exports: [
     // Export UsersService so other modules can use it

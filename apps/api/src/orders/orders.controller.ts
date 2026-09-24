@@ -8,7 +8,7 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger'
 import { OrdersService } from './orders.service'
 import { CreateOrderDto } from './dto/create-order.dto'
 import {
@@ -18,17 +18,14 @@ import {
 import { Session, UserSession } from '@thallesp/nestjs-better-auth'
 import { Order } from '@prisma/client'
 import { RolesGuard, Roles } from '../auth/guards/roles.guard'
-import { AllowAnonymous } from '@thallesp/nestjs-better-auth'
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  /**
-   * Creates a new order from the user's current cart.
-   */
   @Post()
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new order from cart' })
   async create(
     @Session() session: UserSession,
     @Body() dto: CreateOrderDto,
@@ -36,42 +33,36 @@ export class OrdersController {
     return this.ordersService.createOrder(session.user.id, dto)
   }
 
-  /**
-   * Retrieves the order history for the authenticated user.
-   */
   @Get()
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get authenticated user order history' })
   async findAll(@Session() session: UserSession) {
     return this.ordersService.getUserOrders(session.user.id)
   }
 
-  /**
-   * Admin-only order list with status filtering and pagination.
-   */
   @Get('admin')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all orders with filtering and pagination (admin)' })
   async findAllAdmin(@Query() filters: AdminOrdersFilterDto) {
     return this.ordersService.getAllOrdersAdmin(filters)
   }
 
-  /**
-   * Aggregate dashboard metrics for the overview cards.
-   * Declared before admin/:id so 'metrics' is not captured as an order id.
-   */
   @Get('admin/metrics')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get dashboard metrics (admin)' })
   async getMetrics() {
     return this.ordersService.getAdminMetrics()
   }
 
-  /**
-   * Admin-only order detail — no ownership check.
-   */
   @Get('admin/:id')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get order detail (admin)' })
   async findOneAdmin(@Param('id') id: string) {
     return this.ordersService.getOrderByIdAdmin(id)
   }
@@ -79,6 +70,8 @@ export class OrdersController {
   @Patch('admin/:id/status')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update order status (admin)' })
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
@@ -86,11 +79,9 @@ export class OrdersController {
     return this.ordersService.updateOrderStatus(id, dto)
   }
 
-  /**
-   * Retrieves a specific order by ID for the authenticated user.
-   */
   @Get(':id')
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get specific order by ID for authenticated user' })
   async findOne(@Param('id') id: string, @Session() session: UserSession) {
     return this.ordersService.getOrderById(session.user.id, id)
   }

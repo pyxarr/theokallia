@@ -1,18 +1,34 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger'
 import { AllowAnonymous, Session, UserSession } from '@thallesp/nestjs-better-auth'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { SetVipDto } from './dto/set-vip.dto'
+import { AdminCustomersFilterDto } from './dto/admin-users.dto'
 import { UsersService } from './users.service'
 import { RolesGuard, Roles } from '../auth/guards/roles.guard'
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // GET /users/verification-status?email=...
-  // Lets the client re-check verification state on another device.
+  // ============ PUBLIC ENDPOINTS ============
+
   @Get('verification-status')
   @AllowAnonymous()
+  @ApiOperation({ summary: 'Check if email is verified' })
   async verificationStatus(@Query('email') email: string) {
     if (!email) {
       return { verified: false }
@@ -21,25 +37,51 @@ export class UsersController {
     return this.usersService.isEmailVerified(email)
   }
 
-  // GET /users/me
-  // Returns the current logged-in user's profile
+  // ============ USER ENDPOINTS (authenticated) ============
+
   @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
   async getMe(@Session() session: UserSession) {
     return this.usersService.findById(session.user.id)
   }
 
-  // PATCH /users/me
-  // Updates the current logged-in user's profile
   @Patch('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user profile' })
   async updateMe(@Session() session: UserSession, @Body() dto: UpdateUserDto) {
     return this.usersService.updateMe(session.user.id, dto)
   }
 
-  // PATCH /users/:id/vip
-  // Admin-only manual override of a customer's VIP status.
+  // ============ ADMIN ENDPOINTS ============
+
+  @Get('admin')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'List customers with order and spend summaries (admin only)',
+  })
+  findAllAdmin(@Query() filters: AdminCustomersFilterDto) {
+    return this.usersService.findAllCustomers(filters)
+  }
+
+  @Get('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Customer profile with orders and reviews (admin only)',
+  })
+  findOneAdmin(@Param('id') id: string) {
+    return this.usersService.findCustomer(id)
+  }
+
   @Patch(':id/vip')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set customer VIP status (admin)' })
   async setVip(@Param('id') id: string, @Body() dto: SetVipDto) {
     return this.usersService.setVip(id, dto.isVip)
   }
