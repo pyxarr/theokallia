@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Mail, Check } from 'lucide-react'
 import {
   useVerificationStatus,
   useResendVerification,
 } from '@/lib/hooks/use-auth'
+import { toast } from 'sonner'
 
 interface CheckEmailProps {
   email: string
@@ -41,33 +43,15 @@ export default function CheckEmail({ email, onVerified }: CheckEmailProps) {
       await resendEmail(email)
       setResendSuccess(true)
       setTimer(60)
-    } catch (error) {
-      console.error('Failed to resend verification email:', error)
+    } catch {
+      toast.error('Failed to resend verification email')
     }
   }
 
   return (
     <div className="flex flex-col items-center px-2 py-4">
       <div className="mb-6">
-        <svg
-          width="80"
-          height="80"
-          viewBox="0 0 80 80"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M40 4L46.5 14.5L59 10L58 23.5L70 28L63 39.5L70 51L58 55.5L59 69L46.5 64.5L40 75L33.5 64.5L21 69L22 55.5L10 51L17 39.5L10 28L22 23.5L21 10L33.5 14.5L40 4Z"
-            fill="#7E22CE"
-          />
-          <path
-            d="M28 40L36 48L53 31"
-            stroke="white"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Mail className="size-20 text-[#7E22CE]" />
       </div>
 
       <h2
@@ -101,12 +85,13 @@ export default function CheckEmail({ email, onVerified }: CheckEmailProps) {
           {timer > 0
             ? `Resend link in ${timer}s`
             : isPendingResend
-              ? 'Sending...'
-              : 'Resend verification link'}
+            ? 'Sending...'
+            : 'Resend verification link'}
         </button>
 
         {resendSuccess && (
-          <p className="text-xs font-medium text-green-600">
+          <p className="flex items-center gap-2 text-xs font-medium text-green-600">
+            <Check className="size-3" />
             Verification link sent successfully!
           </p>
         )}

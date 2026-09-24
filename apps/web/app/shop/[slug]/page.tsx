@@ -1,119 +1,36 @@
-'use client'
+import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getProduct } from '@/lib/api/products'
+import { getReviews } from '@/lib/api/reviews'
+import ProductPageClient from '@/components/product/product-page'
 
-import ProductImages from '@/components/product/product-images'
-import ProductInfo from '@/components/product/product-info'
-import ProductShipping from '@/components/product/product-shipping'
-import ProductRatingSummary from '@/components/product/product-rating-summary'
-import ProductReviews from '@/components/product/product-reviews'
-import WriteReviewForm from '@/components/product/write-review-form'
-import SimilarProducts from '@/components/product/similar-products'
-import { useProduct } from '@/lib/hooks/use-products'
-import { useReviews } from '@/lib/hooks/use-reviews'
-import { useParams } from 'next/navigation'
-import { ViewTransition } from 'react'
+interface ProductPageProps {
+  params: Promise<{ slug: string }>
+}
 
-export default function ProductPage() {
-  const params = useParams()
-  const slug = params.slug as string
-
-  const { data: product, isLoading, isError } = useProduct(slug)
-
-  // reviews fetched separately — keeps product and reviews cache independent
-  // so submitting a review doesn't refetch the entire product
-  const { data: reviewsData } = useReviews(slug)
-
-  if (isLoading) {
-    return (
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="flex items-center justify-center py-20">
-          <p className="font-cormorant-garamond text-xl text-gray-400">
-            Loading...
-          </p>
-        </div>
-      </main>
-    )
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const product = await getProduct(slug)
+  if (!product) return { title: 'Product Not Found' }
+  return {
+    title: `${product.name} | Theokallia`,
+    description: product.description.slice(0, 160),
+    openGraph: {
+      title: product.name,
+      description: product.description.slice(0, 160),
+      images: product.assets[0]?.publicId ? [product.assets[0].publicId] : [],
+      type: 'website',
+    },
   }
+}
 
-  if (isError || !product) {
-    return (
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="flex items-center justify-center py-20">
-          <p className="font-cormorant-garamond text-xl text-gray-400">
-            Product not found.
-          </p>
-        </div>
-      </main>
-    )
-  }
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { slug } = await params
 
-  return (
-    <ViewTransition>
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        {/* top section — images + info + shipping */}
-        <div className="grid grid-cols-2 gap-12">
-          <ProductImages
-            assets={product.assets}
-            productName={product.name}
-            slug={slug}
-          />
+  const product = await getProduct(slug)
+  if (!product) notFound()
 
-          <div className="flex flex-col gap-6">
-            {/* pass full product — ProductInfo needs id, stock, images etc for cart + wishlist */}
-            <ProductInfo product={product} />
-            <ProductShipping
-              shipping={{
-                deliveryTime: '3-5 working days',
-                courier: 'DHL',
-                arrival: '26th - 31st March',
-                location: 'Nigeria',
-              }}
-            />
-          </div>
-        </div>
+  const reviewsData = await getReviews(slug)
 
-        {/* ratings + reviews */}
-        <div className="mt-16 flex flex-col gap-8">
-          {reviewsData && reviewsData.reviewCount > 0 ? (
-            <>
-              <ProductRatingSummary
-                rating={reviewsData.rating}
-                reviewCount={reviewsData.reviewCount}
-                breakdown={reviewsData.ratingBreakdown}
-              />
-              <ProductReviews
-                reviews={reviewsData.reviews.map((review) => ({
-                  id: review.id,
-                  name: `${review.user.firstName} ${review.user.lastName}`,
-                  date: new Date(review.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  }),
-                  rating: review.rating,
-                  comment: review.comment,
-                }))}
-              />
-            </>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <h2 className="font-cormorant-garamond text-2xl font-semibold text-gray-900">
-                Ratings and reviews
-              </h2>
-              <p className="font-cormorant-garamond text-lg text-gray-400">
-                No reviews yet. Be the first to share your thoughts.
-              </p>
-            </div>
-          )}
-
-          {/* write form renders itself only for buyers who haven't reviewed */}
-          <WriteReviewForm slug={slug} />
-        </div>
-
-        {/* similar products */}
-        <div className="mt-16">
-          <SimilarProducts slug={slug} />
-        </div>
-      </main>
-    </ViewTransition>
-  )
+  return <ProductPageClient slug={slug} product={product} reviewsData={reviewsData} />
 }

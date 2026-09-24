@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface ReviewUser {
   firstName: string
@@ -82,12 +82,13 @@ const fetchReviewEligibility = async (
 // Hooks
 
 // fetch all reviews + rating summary for a product
-export const useReviews = (slug: string) => {
+export const useReviews = (slug: string, initialData?: ReviewsSummary | null) => {
   return useQuery({
     queryKey: ['reviews', slug],
     queryFn: () => fetchReviews(slug),
     enabled: !!slug,
-    staleTime: 1000 * 60 * 5,
+    initialData,
+    staleTime: 1000 * 30,
   })
 }
 
@@ -117,6 +118,7 @@ export const useReviewEligibility = (slug: string, enabled = true) => {
     queryKey: ['reviews', slug, 'eligibility'],
     queryFn: () => fetchReviewEligibility(slug),
     enabled: enabled && !!slug,
+    staleTime: 1000 * 60,
   })
 }
 
