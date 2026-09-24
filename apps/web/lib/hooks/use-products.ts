@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface Category {
   id: string
@@ -129,12 +129,13 @@ export const useProducts = (filters: ProductFilters = {}) => {
 }
 
 // product detail page
-export const useProduct = (slug: string) => {
+export const useProduct = (slug: string, initialData?: Product) => {
   return useQuery({
     queryKey: ['products', slug],
     queryFn: () => fetchProduct(slug),
     enabled: !!slug,
-    staleTime: 1000 * 60 * 5,
+    initialData,
+    staleTime: 1000 * 30,
   })
 }
 

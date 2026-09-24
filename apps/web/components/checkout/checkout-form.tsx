@@ -45,8 +45,6 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
   const { validate, clear, isValidating, error: couponError, result: couponResult } = useValidateCoupon()
   const { data: dbCart, isLoading: cartLoading } = useCart(isAuthenticated)
   const [couponInput, setCouponInput] = useState('')
-  const [appliedDiscount, setAppliedDiscount] = useState(0)
-  const [appliedCouponCode, setAppliedCouponCode] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
   const { formatPrice } = useCurrency()
 
@@ -91,13 +89,13 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
     if (!dbCart?.items?.length) return
 
     const subtotal = dbCart.items.reduce(
-      (sum: number, item: any) => sum + (item.product.price ?? 0) * item.quantity,
+      (sum: number, item) => sum + (item.product.price ?? 0) * item.quantity,
       0,
     )
 
-    const items = dbCart.items.map((item: any) => ({
+    const items = dbCart.items.map((item) => ({
       productId: item.product.id,
-      categoryId: item.product.categoryId,
+      categoryId: item.product.category?.name ?? '',
       price: item.product.price ?? 0,
       quantity: item.quantity,
     }))
@@ -176,11 +174,9 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
     }
   }
 
-  // Update applied discount and code when validation result changes
+  // Call coupon callbacks when validation result changes
   useEffect(() => {
     if (couponResult) {
-      setAppliedDiscount(couponResult.discount)
-      setAppliedCouponCode(couponResult.code)
       onCouponApplied(couponResult.discount, couponResult.code)
     } else {
       onCouponCleared()

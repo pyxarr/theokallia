@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import api from '@/lib/api'
+import axios from 'axios'
 
 export interface CouponValidationResult {
   valid: boolean
@@ -36,8 +37,10 @@ export function useValidateCoupon() {
       })
       setResult(response.data)
       return response.data
-    } catch (err: any) {
-      const message = err?.response?.data?.message ?? 'Invalid coupon code.'
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message ?? 'Invalid coupon code.'
+        : 'Invalid coupon code.'
       setError(message)
       return null
     } finally {
