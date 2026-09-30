@@ -11,7 +11,17 @@ import { ResendAudienceProvider } from './providers/resend-audience.provider'
  * PrismaModule is @Global(), so it is not imported here.
  */
 @Module({
-  imports: [BullModule.registerQueue({ name: 'subscribers' })],
+  imports: [
+    BullModule.registerQueue({
+      name: 'subscribers',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    }),
+  ],
   controllers: [SubscribersController],
   providers: [SubscribersService, SubscribersProcessor, ResendAudienceProvider],
   exports: [SubscribersService],

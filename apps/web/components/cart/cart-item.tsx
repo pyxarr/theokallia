@@ -42,7 +42,7 @@ interface CartItemProps {
 
 export default function CartItem({ item, onUpdate }: CartItemProps) {
   const { isAuthenticated } = useAuthStore()
-  const { format, convert } = useCurrency()
+  const { fmt } = useCurrency()
 
   const { mutate: removeItem, isPending: isRemoving } = useRemoveCartItem()
 
@@ -98,7 +98,7 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
             </p>
           </div>
           <p className="font-allure text-lg font-semibold text-gray-900">
-            {format(convert(item.product.price, item.product) * item.quantity)}
+            {fmt(item.product.price * item.quantity, item.product)}
           </p>
         </div>
 

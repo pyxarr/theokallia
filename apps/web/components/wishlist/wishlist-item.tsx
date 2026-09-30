@@ -59,7 +59,7 @@ export default function WishlistItem({
   // cart data needed to check if the item is already at its stock limit
   const { data: dbCart } = useCart(isAuthenticated)
   const { items: guestItems } = useGuestCartStore()
-  const { formatPrice } = useCurrency()
+  const { fmt } = useCurrency()
 
   // resolve product from whichever shape was passed — must happen before any product references
   const product = item?.product ?? guestProduct
@@ -173,7 +173,7 @@ export default function WishlistItem({
             </p>
           </div>
           <p className="font-allure text-lg font-semibold text-gray-900">
-            {formatPrice(product.price, product)}
+            {fmt(product.price, product)}
           </p>
         </div>
 

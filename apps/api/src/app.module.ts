@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config'
 import { SentryModule } from '@sentry/nestjs/setup'
 import { SentryGlobalFilter } from '@sentry/nestjs/setup'
 import { BullModule } from '@nestjs/bullmq'
+import { ThrottlerModule } from '@nestjs/throttler'
 import { UsersModule } from './users/users.module'
 import { CategoriesModule } from './categories/categories.module'
 import { ProductsModule } from './products/products.module'
@@ -54,9 +55,15 @@ import * as Joi from 'joi'
     BullModule.forRoot({
       connection: {
         url: process.env.REDIS_URL,
-        tls: {},
       },
     }),
+    // Throttler for rate limiting — 100 requests per minute per IP
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     BetterAuthModule.forRoot({ auth }),
     SentryModule.forRoot(),
     PrismaModule,

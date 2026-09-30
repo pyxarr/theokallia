@@ -21,7 +21,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const { isAuthenticated } = useAuthStore()
   const [showAdded, setShowAdded] = useState(false)
-  const { formatPrice } = useCurrency()
+  const { fmt } = useCurrency()
 
   const { mutate: addToCart } =
     useAddToCart(isAuthenticated)
@@ -148,7 +148,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="mt-2 flex items-center justify-between text-lg text-gray-900">
           <span className="text-xl">{product.name}</span>
           <span className="font-le-jour">
-            {formatPrice(product.price, product)}
+            {fmt(product.price, product)}
           </span>
         </div>
         <p className="text-xl font-bold text-gray-900">

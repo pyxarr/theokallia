@@ -23,6 +23,8 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const { isAuthenticated } = useAuthStore()
   const { formatPrice } = useCurrency()
 
+  const { symbol: priceSymbol, amount: priceAmount } = formatPrice(product.price, product)
+
   const { mutate: addToCart, isPending: isAdding } =
     useAddToCart(isAuthenticated)
   const { mutate: updateItem } = useUpdateCartItem()
@@ -169,8 +171,8 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
             />
           </button>
         </div>
-        <p className="mt-4 font-le-jour text-3xl text-gray-900">
-          {formatPrice(product.price, product)}
+        <p className="mt-4 text-3xl text-gray-900">
+          <span className="font-sans text-2xl">{priceSymbol}</span>{priceAmount}
         </p>
       </div>
 

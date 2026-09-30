@@ -46,7 +46,7 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
   const { data: dbCart, isLoading: cartLoading } = useCart(isAuthenticated)
   const [couponInput, setCouponInput] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
-  const { formatPrice } = useCurrency()
+  const { fmt } = useCurrency()
 
   const {
     register,
@@ -275,7 +275,7 @@ export default function CheckoutForm({ onPaymentInitiated, isPending, onCouponAp
         {couponError && <p className="text-xs text-red-500">{couponError}</p>}
         {couponResult && (
           <p className="text-xs text-green-600">
-            Coupon applied — {formatPrice(couponResult.discount)} off
+            Coupon applied — {fmt(couponResult.discount)} off
           </p>
         )}
       </div>

@@ -27,7 +27,7 @@ interface OrderSummaryProps {
 export default function OrderSummary({ shippingFee = 0, discount = 0, couponCode }: OrderSummaryProps) {
   const { isAuthenticated } = useAuthStore()
   const { data: dbCart } = useCart(isAuthenticated)
-  const { formatPrice, format, convert } = useCurrency()
+  const { fmt } = useCurrency()
 
   const items = dbCart?.items ?? []
   const subtotal = dbCart?.total ?? 0
@@ -53,7 +53,7 @@ export default function OrderSummary({ shippingFee = 0, discount = 0, couponCode
                 {item.product.name} × {item.quantity}
               </span>
               <span className="font-medium">
-                {format(convert(displayPrice, item.product) * item.quantity)}
+                {fmt(displayPrice * item.quantity, item.product)}
               </span>
             </div>
             )
@@ -63,21 +63,21 @@ export default function OrderSummary({ shippingFee = 0, discount = 0, couponCode
         <div className="border-t border-gray-100 pt-4 flex flex-col gap-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Subtotal</span>
-            <span>{formatPrice(subtotal)}</span>
+            <span>{fmt(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Delivery fee</span>
-            <span>{formatPrice(shippingFee)}</span>
+            <span>{fmt(shippingFee)}</span>
           </div>
           {discount > 0 && (
             <div className="flex items-center justify-between text-sm text-green-600">
               <span>Discount {couponCode ? `(${couponCode})` : ''}</span>
-              <span>−{formatPrice(discount)}</span>
+              <span>−{fmt(discount)}</span>
             </div>
           )}
           <div className="flex items-center justify-between border-t border-gray-100 pt-4 text-lg font-medium">
             <span>Total</span>
-            <span>{formatPrice(orderTotal)}</span>
+            <span>{fmt(orderTotal)}</span>
           </div>
         </div>
 

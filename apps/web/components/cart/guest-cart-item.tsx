@@ -24,7 +24,7 @@ export default function GuestCartItem({
 
   // read from Zustand store — reactive, updates immediately when wishlist changes
   const { items: guestWishlistItems } = useGuestWishlistStore()
-  const { format, convert } = useCurrency()
+  const { fmt } = useCurrency()
 
   // check if this product is already in the guest wishlist
   const isWishlisted = guestWishlistItems.some((i) => i.id === item.productId)
@@ -87,7 +87,7 @@ export default function GuestCartItem({
             </p>
           </div>
           <p className="font-allure text-lg font-semibold text-gray-900">
-            {format(convert(item.price, item) * item.quantity)}
+            {fmt(item.price * item.quantity, item)}
           </p>
         </div>
 

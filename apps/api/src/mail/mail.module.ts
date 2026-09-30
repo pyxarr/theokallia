@@ -7,18 +7,24 @@ import { ResendProvider } from './providers/resend.provider'
 
 @Module({
   imports: [
-    // Register the mail queue — backed by Upstash Redis
+    // Register the mail queue
     BullModule.registerQueue({
       name: 'mail',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     }),
   ],
   controllers: [MailController],
   providers: [
-    MailProcessor, 
-    MailService, 
+    MailProcessor,
+    MailService,
     ResendProvider
   ],
   exports: [MailService],
 })
-export class MailModule {}
+export class MailModule { }
 

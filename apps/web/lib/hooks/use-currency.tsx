@@ -81,19 +81,29 @@ export function useCurrency() {
   /**
    * Formats a numeric value already expressed in the active currency.
    * Use for line totals: format(convert(unitNgn, product) * quantity).
+   * Returns object with separate symbol and amount for styling.
    */
-  const format = (value: number): string => {
+  const format = (value: number): { symbol: string; amount: string } => {
     const decimals = currency === 'NGN' ? 0 : 2
     const formatted = value.toLocaleString(LOCALES[currency], {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     })
-    return `${SYMBOLS[currency]}${formatted}`
+    return { symbol: SYMBOLS[currency], amount: formatted }
   }
 
   /** Converts an NGN amount and formats it in the active currency. */
-  const formatPrice = (ngnAmount: number, product?: PriceSource): string =>
+  const formatPrice = (ngnAmount: number, product?: PriceSource): { symbol: string; amount: string } =>
     format(convert(ngnAmount, product))
 
-  return { currency, setCurrency, formatPrice, format, convert, rates, options: CURRENCY_OPTIONS }
+  /**
+   * Formats an NGN amount and returns JSX with styled symbol + amount.
+   * Use this in components for rendering prices.
+   */
+  const fmt = (ngnAmount: number, product?: PriceSource) => {
+    const { symbol, amount } = formatPrice(ngnAmount, product)
+    return <>{symbol}<span className="font-sans">{amount}</span></>
+  }
+
+  return { currency, setCurrency, formatPrice, format, convert, fmt, rates, options: CURRENCY_OPTIONS }
 }

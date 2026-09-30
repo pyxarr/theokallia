@@ -27,17 +27,18 @@ const ProductImages = ({ assets, productName, slug }: ProductImagesProps) => {
     <div className="flex flex-col gap-3">
        {/* Main Image */}
        <div className="relative aspect-square w-full overflow-hidden bg-[#f5f0eb]">
-         {assets[activeIndex]?.publicId ? (
-           <ViewTransition name={slug}>
-             <Image
-               src={assets[activeIndex].publicId}
-               alt={productName}
-               fill
-               className="object-cover"
-               sizes="(max-width: 768px) 100vw, 50vw"
-               priority
-             />
-           </ViewTransition>
+{assets[activeIndex]?.publicId ? (
+            <ViewTransition name={slug}>
+              <Image
+                src={assets[activeIndex].publicId}
+                alt={productName}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+                loading="eager"
+              />
+            </ViewTransition>
          ) : (
            <div className="flex h-full w-full items-center justify-center text-gray-400">
              No image available

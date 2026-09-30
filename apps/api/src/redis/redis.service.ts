@@ -7,11 +7,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis
 
   constructor(private config: ConfigService) {
-    // Connect to Upstash Redis using the URL from .env
-    this.client = new Redis(this.config.get<string>('REDIS_URL')!, {
-      // Required for Upstash TLS connection (rediss://)
-      tls: {},
-    })
+    // Connect to Redis using the URL from .env
+    this.client = new Redis(this.config.get<string>('REDIS_URL')!)
   }
 
   onModuleInit() {

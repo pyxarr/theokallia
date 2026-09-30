@@ -11,6 +11,12 @@ import { OrdersModule } from '../orders/orders.module'
     OrdersModule,
     BullModule.registerQueue({
       name: 'mail',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     }),
   ],
   controllers: [PaymentsController],

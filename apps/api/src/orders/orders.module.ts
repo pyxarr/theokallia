@@ -11,8 +11,24 @@ import { ShippingZonesModule } from './shipping-zones/shipping-zones.module'
   imports: [
     PrismaModule,
     BullModule.registerQueue(
-      { name: 'orders' },
-      { name: 'mail' },
+      { 
+        name: 'orders',
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      },
+      { 
+        name: 'mail',
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      },
     ),
     CouponsModule,
     ShippingZonesModule,
