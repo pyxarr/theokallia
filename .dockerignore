@@ -5,3 +5,4 @@ apps/web/.next
 dist
 **/dist
 *.log
+**/.env*

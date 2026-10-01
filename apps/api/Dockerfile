@@ -5,14 +5,28 @@ WORKDIR /app
 
 # Stage 2: Build
 FROM base AS build
+
+# Copy all workspace manifests so pnpm can resolve the full closure
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/emails/package.json ./packages/emails/
 COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 RUN pnpm install --frozen-lockfile
+
+# Copy full source
 COPY . .
 
+# Build emails first — apps/api depends on it
+WORKDIR /app/packages/emails
+RUN pnpm build
+
+# Build api
 WORKDIR /app/apps/api
 RUN pnpm build
 
@@ -23,21 +37,24 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Create a non-root user for security
 RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
 
-# Copy workspace config and package files to install production dependencies
+# Copy all workspace manifests for production install
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/emails/package.json ./packages/emails/
 COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
 
-# Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
-# Copy the build output and prisma client from build stage
+# Copy built outputs from build stage
 COPY --from=build --chown=nodeuser:nodegroup /app/apps/api/dist ./apps/api/dist
-# Copy generated prisma client (it goes into the root node_modules in pnpm workspaces)
+COPY --from=build --chown=nodeuser:nodegroup /app/packages/emails/dist ./packages/emails/dist
 COPY --from=build --chown=nodeuser:nodegroup /app/node_modules/.pnpm /app/node_modules/.pnpm
 
 USER nodeuser
