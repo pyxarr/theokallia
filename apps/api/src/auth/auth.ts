@@ -14,7 +14,6 @@ const prisma = new PrismaClient({
 const mailQueue = new Queue('mail', {
   connection: {
     url: process.env.REDIS_URL,
-    tls: {},
   },
 })
 
@@ -22,7 +21,6 @@ const mailQueue = new Queue('mail', {
 const subscribersQueue = new Queue('subscribers', {
   connection: {
     url: process.env.REDIS_URL,
-    tls: {},
   },
 })
 
