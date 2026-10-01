@@ -315,7 +315,14 @@ export interface User {
 
 export type AuthUser = Omit<User, 'createdAt' | 'updatedAt'>
 ```
-`@theokallia/api` does NOT import from `@theokallia/types` — it uses a local `src/types/user.ts` copy.
+
+`@theokallia/types` is the single source of truth for types shared across apps. All three apps (`@theokallia/api`, `@theokallia/web`, `@theokallia/admin`) import from it; there are no local duplicates. Modules: `user`, `product`, `category`, `review`, `order`, `asset`, `enums`, `upload`, `common`.
+
+Cross-app enums and envelopes live here rather than in app-local files:
+- `asset.ts` — `Asset` (Cloudinary media attached to products and orders)
+- `enums.ts` — `AdminOrderStatus`, `ModerationStatus`, `SubscriberTag` (all lowercase string unions; the API returns lowercase)
+- `upload.ts` — `SignUploadResult`
+- `common.ts` — `PaginationMeta`, `Paginated<T>` for every paginated list response
 
 ## 6. API Contract
 | Base | URL |

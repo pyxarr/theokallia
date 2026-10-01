@@ -185,7 +185,7 @@ Deployment topology: API on Render, frontend on Vercel, database on Neon Postgre
 - Mail via BullMQ only; never call `nodemailer.sendMail()` directly.
 - `PrismaService` and `RedisService` are `@Global()`.
 - `PrismaService` uses `.client` getter: `this.prisma.client.xyz`.
-- Do not import from `@theokallia/types` in `@theokallia/api`.
+- Import shared types from `@theokallia/types` in all apps; never redeclare a type that already exists there.
 - `VersioningType` comes from `@nestjs/common`.
 - Keep `enableImplicitConversion: true` in `ValidationPipe`.
 - `Record<K, V>` always needs both type arguments.

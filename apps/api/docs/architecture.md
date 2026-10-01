@@ -170,22 +170,59 @@ MAIL_FROM=your-gmail@gmail.com
 ```
 
 ## 16. Deployment
+`apps/api/Dockerfile` is a three-stage build (base → build → runner). Two details matter:
+
+1. **All eight workspace manifests are copied before `pnpm install`.** pnpm resolves against the full workspace lockfile, so copying only the api's own dependencies fails. Manifests: `apps/{api,web,admin}` and `packages/{emails,types,ui,typescript-config,eslint-config}`.
+2. **`packages/emails` is built before `apps/api`**, and its `dist` is copied into the runner — the api consumes `@theokallia/emails` at runtime.
+
 ```dockerfile
-FROM node:20-alpine
-WORKDIR /app
+FROM node:22-alpine AS base
 RUN npm install -g pnpm
+WORKDIR /app
+
+FROM base AS build
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/emails/package.json ./packages/emails/
 COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
 RUN pnpm install --frozen-lockfile
 COPY . .
-WORKDIR /app/apps/api
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
+WORKDIR /app/packages/emails
 RUN pnpm build
+WORKDIR /app/apps/api
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+RUN npm install -g pnpm
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/emails/package.json ./packages/emails/
+COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+RUN pnpm install --prod --frozen-lockfile
+COPY --from=build --chown=nodeuser:nodegroup /app/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=nodeuser:nodegroup /app/packages/emails/dist ./packages/emails/dist
+COPY --from=build --chown=nodeuser:nodegroup /app/node_modules/.pnpm /app/node_modules/.pnpm
+USER nodeuser
+WORKDIR /app/apps/api
 EXPOSE 3333
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]
 ```
+
+**Entrypoint is `dist/src/main`, not `dist/main`.** `apps/api/tsconfig.json` sets no `rootDir`, so tsc infers the project root as `apps/api/` and emits `src/` into the output — output lands at `dist/src/main.js`. `package.json` `start:prod` and the Dockerfile `CMD` must both use that path.
+
+Runtime env (`DATABASE_URL`, Paystack, Resend, Cloudinary, Redis, Better Auth secrets) is injected by the platform at run time; no build-time `ARG` is used. The root `.dockerignore` excludes `**/.env*` so local secrets never enter the build stage.
 
 Render uses the Dockerfile above.

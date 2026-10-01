@@ -6,15 +6,15 @@
 ## Project Overview
 - Theokallia (*Divine Beauty*) is a full-stack luxury jewellery e-commerce platform for a Nigerian jewellery brand.
 - Platform split: storefront (`theokallia.com`), NestJS API (`api.theokallia.com`), custom admin dashboard (`apps/admin`).
-- Current status: auth, users, categories, products, reviews, cart, and wishlist are complete end to end.
+- Current status: auth, users, categories, products, reviews, cart, wishlist, orders, payments, uploads, coupons, subscribers, content blocks, shipping zones, multi-currency, and the admin dashboard are complete end to end.
 - Stack: TypeScript throughout, Next.js 16 frontend, NestJS backend, Prisma in `@theokallia/api`.
 
 ## Current Build State
 See `docs/plan.md` for the full picture.
 Summary:
-- Complete: auth, users, categories, products, reviews, cart, wishlist.
-- Next: orders.
-- Not started: payments, upload, admin dashboard, shipping config, Redis caching on `GET /products`, CI/CD.
+- Complete: auth, users, categories, products, reviews, cart, wishlist, orders, payments (Paystack), uploads (Cloudinary), coupons, subscribers, content blocks, shipping zones, multi-currency, admin dashboard (products, orders, reviews, customers, categories, newsletter).
+- Not built: admin content / coupons / settings pages (`apps/admin/app/(dashboard)/{content,coupons,settings}`) — the API endpoints exist and are unused by the UI.
+- Not started: Redis caching on `GET /products`, CI/CD (`.github/workflows` does not exist), Turborepo remote caching.
 
 ## Technology Stack
 | Layer | Technology |
@@ -49,7 +49,7 @@ Summary:
 | Caching | Upstash Redis |
 | Rate limiting | `@nestjs/throttler` |
 | Validation | `class-validator` + `class-transformer` |
-| Deployment | Render (Dockerfile, Node 20 Alpine, `@theokallia/api/Dockerfile`) |
+| Deployment | Render (3-stage Dockerfile, Node 22 Alpine, `@theokallia/api/Dockerfile`) |
 | Google OAuth | Deferred (`passport-google-oauth20`) |
 | Payments | Paystack |
 | File storage | Cloudinary |
@@ -68,11 +68,14 @@ Summary:
 - After completing any task, suggest any needed `docs/` updates; do not update them automatically.
 - Maximum 5 files per response unless instructed otherwise.
 - TypeScript must compile (`npx tsc --noEmit`) and ESLint must pass before reporting completion.
+- For Next.js apps run `npx next typegen` before `npx tsc --noEmit`; without it `.next/types` is missing and typecheck fails.
+- Canonical shared types live in `@theokallia/types` (`asset`, `enums`, `upload`, `common`). Import them in all three apps; never redeclare them locally.
+- API code imports types from `@theokallia/types`; re-export with `export type { X } from '@theokallia/types'` when consumers import from a local module.
 
 ## Never Do
 - Use `any` in TypeScript.
 - Call `nodemailer.sendMail()` directly.
-- Import from `@theokallia/types` in `@theokallia/api`.
+- Declare local copies of a type that already exists in `@theokallia/types`; import it from there instead.
 - Use `this.prisma.product.findMany()`; always use `this.prisma.client.xyz`.
 - Hardcode `API_VERSION`; always import it from `lib/api.ts`.
 - Read `localStorage` directly in components; use Zustand stores.
