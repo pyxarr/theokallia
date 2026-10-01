@@ -1,8 +1,7 @@
 import { BadRequestException } from '@nestjs/common'
+import type { AdminOrderStatus } from '@theokallia/types'
 
-/** Order statuses. */
-export type AdminOrderStatus =
-  'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
+export type { AdminOrderStatus } from '@theokallia/types'
 
 /** Allowed order status transitions for the admin fulfillment flow. */
 const ALLOWED_TRANSITIONS: Record<string, AdminOrderStatus[]> = {

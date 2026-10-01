@@ -7,16 +7,7 @@ import { useToggleWishlist, useWishlist } from '@/lib/hooks/use-wishlist'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
-
-interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
-}
+import type { Asset } from '@theokallia/types'
 
 interface CartItemProps {
   item: {

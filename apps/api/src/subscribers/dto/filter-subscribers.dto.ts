@@ -8,8 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator'
-
-export type SubscriberTag = 'guest' | 'registered' | 'vip'
+import type { SubscriberTag } from '@theokallia/types'
 
 /**
  * Query DTO for the admin subscriber list.

@@ -4,18 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'
 import { useGuestCartStore } from '../stores/guest-cart-store'
 import { toast } from 'sonner'
+import type { Asset } from '@theokallia/types'
 
 // types
-
-interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
-}
 
 interface CartProduct {
   id: string

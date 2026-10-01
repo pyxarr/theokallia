@@ -34,11 +34,11 @@ import {
   useModerateReview,
   useDeleteReview,
   type AdminReview,
-  type AdminReviewStatus,
 } from '@/lib/hooks/use-admin-reviews'
+import type { ModerationStatus } from '@theokallia/types'
 import { cn, errorMessage } from '@/lib/utils'
 
-type StatusFilter = AdminReviewStatus | 'all'
+type StatusFilter = ModerationStatus | 'all'
 
 const tabs: { label: string; value: StatusFilter }[] = [
   { label: 'Pending', value: 'pending' },
@@ -47,7 +47,7 @@ const tabs: { label: string; value: StatusFilter }[] = [
   { label: 'All', value: 'all' },
 ]
 
-function statusVariant(status: AdminReviewStatus) {
+function statusVariant(status: ModerationStatus) {
   if (status === 'approved') return 'default'
   if (status === 'rejected') return 'outline'
   return 'secondary'
@@ -135,7 +135,7 @@ export default function ReviewsPage() {
 
   const handleModerate = async (
     review: AdminReview,
-    next: Exclude<AdminReviewStatus, 'pending'>
+    next: Exclude<ModerationStatus, 'pending'>
   ) => {
     try {
       await moderate({ id: review.id, status: next })

@@ -5,14 +5,15 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { ModerationStatus, Paginated } from '@theokallia/types'
 
-export type AdminReviewStatus = 'pending' | 'approved' | 'rejected'
+export type { ModerationStatus } from '@theokallia/types'
 
 export interface AdminReview {
   id: string
   rating: number
   comment: string
-  status: AdminReviewStatus
+  status: ModerationStatus
   createdAt: string
   user: {
     firstName: string
@@ -27,7 +28,7 @@ export interface AdminReview {
 }
 
 export interface AdminReviewFilters {
-  status?: AdminReviewStatus
+  status?: ModerationStatus
   limit?: number
 }
 
@@ -37,15 +38,7 @@ export interface AdminReviewCounts {
   rejected: number
 }
 
-interface AdminReviewsPage {
-  data: AdminReview[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
-}
+type AdminReviewsPage = Paginated<AdminReview>
 
 const fetchAdminReviews = async (
   filters: AdminReviewFilters,
@@ -70,7 +63,7 @@ const moderateReview = async ({
   status,
 }: {
   id: string
-  status: Exclude<AdminReviewStatus, 'pending'>
+  status: Exclude<ModerationStatus, 'pending'>
 }): Promise<AdminReview> => {
   const res = await api.patch(`/reviews/admin/${id}/status`, { status })
   return res.data

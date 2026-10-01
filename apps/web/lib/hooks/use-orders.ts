@@ -1,18 +1,9 @@
 import api from '@/lib/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import type { Asset } from '@theokallia/types'
 
 // types
-
-interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
-}
 
 interface OrderItem {
   id: string
@@ -35,7 +26,7 @@ interface ShippingAddress {
 interface Order {
   id: string
   total: number
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
   createdAt: string
   updatedAt: string
   items: OrderItem[]
@@ -88,7 +79,7 @@ export const usePendingOrder = () => {
   const { isAuthenticated } = useAuthStore()
   const { data: orders, isLoading } = useOrders(isAuthenticated)
 
-  const pendingOrder = orders?.find((o) => o.status === 'PENDING') ?? null
+  const pendingOrder = orders?.find((o) => o.status === 'pending') ?? null
 
   return { pendingOrder, isLoading }
 }

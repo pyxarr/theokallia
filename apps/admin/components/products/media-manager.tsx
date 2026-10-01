@@ -6,8 +6,8 @@ import {
   useConfirmUpload,
   useDeleteUpload,
   useSignUpload,
-  type AdminAsset,
 } from '@/lib/hooks/use-admin-products'
+import type { Asset } from '@theokallia/types'
 
 export interface PendingMedia {
   publicId: string
@@ -17,7 +17,7 @@ export interface PendingMedia {
 
 interface PendingMediaManagerProps {
   /** Existing assets on the product (edit mode). */
-  assets: AdminAsset[]
+  assets: Asset[]
   /** Temporary uploads collected on the create form (not yet linked to any product). */
   pending: PendingMedia[]
   /** Set once a product id exists, so new files link immediately (edit mode). */

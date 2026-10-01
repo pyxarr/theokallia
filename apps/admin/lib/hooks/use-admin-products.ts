@@ -1,19 +1,12 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { Asset, SignUploadResult, Paginated } from '@theokallia/types'
+
+export type { Asset } from '@theokallia/types'
 
 interface AdminCategoryRef {
   name: string
   slug: string
-}
-
-export interface AdminAsset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
 }
 
 export interface AdminProduct {
@@ -30,7 +23,7 @@ export interface AdminProduct {
   subcategoryId: string | null
   category: AdminCategoryRef
   subcategory: AdminCategoryRef | null
-  assets: AdminAsset[]
+  assets: Asset[]
   createdAt: string
   updatedAt: string
 }
@@ -44,15 +37,7 @@ export interface AdminProductFilters {
   limit?: number
 }
 
-interface AdminProductsPage {
-  data: AdminProduct[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
-}
+type AdminProductsPage = Paginated<AdminProduct>
 
 export interface CreateProductInput {
   name: string
@@ -74,14 +59,6 @@ export interface SignUploadInput {
   fileName: string
   fileSize: number
   mimeType: string
-}
-
-export interface SignUploadResult {
-  signature: string
-  timestamp: number
-  apiKey: string
-  cloudName: string
-  uploadPreset: string
 }
 
 export interface ConfirmUploadInput {
@@ -138,7 +115,7 @@ const signUpload = async (input: SignUploadInput): Promise<SignUploadResult> => 
   return res.data
 }
 
-const confirmUpload = async (input: ConfirmUploadInput): Promise<AdminAsset> => {
+const confirmUpload = async (input: ConfirmUploadInput): Promise<Asset> => {
   const res = await api.post('/uploads/confirm', input)
   return res.data
 }

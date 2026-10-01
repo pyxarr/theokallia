@@ -5,9 +5,9 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { AdminOrderStatus, Paginated } from '@theokallia/types'
 
-export type AdminOrderStatus =
-  'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
+export type { AdminOrderStatus } from '@theokallia/types'
 
 export interface AdminOrderUser {
   firstName: string
@@ -58,15 +58,7 @@ export interface AdminOrderFilters {
   limit?: number
 }
 
-interface AdminOrdersPage {
-  data: AdminOrder[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
-}
+type AdminOrdersPage = Paginated<AdminOrder>
 
 const fetchAdminOrders = async (
   filters: AdminOrderFilters,

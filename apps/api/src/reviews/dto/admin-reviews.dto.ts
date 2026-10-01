@@ -1,7 +1,8 @@
 import { Type } from 'class-transformer'
 import { IsIn, IsInt, IsOptional, Min, Max } from 'class-validator'
+import type { ModerationStatus } from '@theokallia/types'
 
-export type ModerationStatus = 'pending' | 'approved' | 'rejected'
+export type { ModerationStatus } from '@theokallia/types'
 
 /** Why the write-review form is hidden for the current visitor. */
 export type ReviewEligibilityReason =

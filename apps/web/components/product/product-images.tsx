@@ -3,16 +3,7 @@
 import { useState } from 'react'
 import { ViewTransition } from 'react'
 import Image from 'next/image'
-
-interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
-}
+import type { Asset } from '@theokallia/types'
 
 interface ProductImagesProps {
   assets: Asset[]

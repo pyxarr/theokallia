@@ -4,18 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useGuestWishlistStore } from '../stores/guest-wishlist-store'
 import type { WishlistItemProduct } from '@/components/wishlist/wishlist-item'
 import { toast } from 'sonner'
+import type { Asset } from '@theokallia/types'
 
 // types
-
-interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
-}
 
 interface WishlistProduct {
   id: string

@@ -9,16 +9,7 @@ import { useGuestWishlistStore } from '@/lib/stores/guest-wishlist-store'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
 import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
-
-export interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
-}
+import type { Asset } from '@theokallia/types'
 
 export interface WishlistItemProduct {
   id: string

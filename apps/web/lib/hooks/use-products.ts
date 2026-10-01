@@ -1,5 +1,6 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { Asset, Paginated } from '@theokallia/types'
 
 // Types
 
@@ -13,16 +14,6 @@ interface Subcategory {
   id: string
   name: string
   slug: string
-}
-
-interface Asset {
-  id: string
-  publicId: string
-  altText: string | null
-  sortOrder: number
-  resourceType: string
-  entityType: string
-  entityId: string
 }
 
 interface Review {
@@ -72,15 +63,7 @@ export interface ProductFilters {
   limit?: number
 }
 
-interface ProductsPage {
-  data: Product[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
-}
+type ProductsPage = Paginated<Product>
 
 // Fetchers
 

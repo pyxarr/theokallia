@@ -1,15 +1,11 @@
+import type { SignUploadResult } from '@theokallia/types'
+
+export type { SignUploadResult } from '@theokallia/types'
+
 export interface SignUploadParams {
   fileName: string
   fileSize: number
   mimeType: string
-}
-
-export interface SignUploadResult {
-  signature: string
-  timestamp: number
-  apiKey: string
-  cloudName: string
-  uploadPreset: string
 }
 
 export interface DeleteResult {

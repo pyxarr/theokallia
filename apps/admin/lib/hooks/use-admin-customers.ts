@@ -5,9 +5,11 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { ModerationStatus, Paginated } from '@theokallia/types'
+
+export type { ModerationStatus } from '@theokallia/types'
 
 export type CustomerRole = 'customer' | 'admin'
-export type ModerationStatus = 'pending' | 'approved' | 'rejected'
 
 export interface AdminCustomer {
   id: string
@@ -76,15 +78,7 @@ export interface AdminCustomerFilters {
   limit?: number
 }
 
-interface AdminCustomersPage {
-  data: AdminCustomer[]
-  meta: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-  }
-}
+type AdminCustomersPage = Paginated<AdminCustomer>
 
 const fetchAdminCustomers = async (
   filters: AdminCustomerFilters,
