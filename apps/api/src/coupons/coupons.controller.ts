@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Request,
   UseGuards,
   HttpCode,
@@ -16,6 +17,7 @@ import { CouponsService } from './coupons.service'
 import { ValidateCouponDto } from './dto/validate-coupon.dto'
 import { CreateCouponDto } from './dto/create-coupon.dto'
 import { UpdateCouponDto } from './dto/update-coupon.dto'
+import { FilterCouponsDto } from './dto/filter-coupons.dto'
 import { RolesGuard, Roles } from '../auth/guards/roles.guard'
 
 /**
@@ -44,15 +46,30 @@ export class CouponsController {
 
   /**
    * GET /coupons
-   * Lists all coupons, newest first. Admin only.
+   * Paginated coupon list with search, type, scope, and active filters. Admin only.
    */
   @Get()
   @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List all coupons (admin only)' })
-  findAll() {
-    return this.couponsService.findAll()
+  @ApiOperation({ summary: 'List coupons with filtering and pagination (admin only)' })
+  findAll(@Query() filters: FilterCouponsDto) {
+    return this.couponsService.findAll(filters)
+  }
+
+  /**
+   * GET /coupons/counts
+   * Active/inactive and per-type totals for the tab badges.
+   * Declared before the :id route so 'counts' is never captured as an id.
+   * Admin only.
+   */
+  @Get('counts')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Count coupons by state and type (admin only)' })
+  counts() {
+    return this.couponsService.countByState()
   }
 
   /**

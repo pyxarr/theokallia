@@ -4,6 +4,7 @@ import { Job } from 'bullmq'
 import { PrismaService } from '../prisma/prisma.service'
 import { OrdersService } from './orders.service'
 import { CouponsService } from '../coupons/coupons.service'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 @Processor('orders')
 export class OrdersProcessor extends WorkerHost {
@@ -29,39 +30,45 @@ export class OrdersProcessor extends WorkerHost {
   private async handleReservationExpiry(orderId: string) {
     this.logger.log(`Checking reservation expiry for order ${orderId}`)
 
-    const order = await this.prisma.client.order.findUnique({
-      where: { id: orderId },
-    })
+    // Atomically cancel only if still pending — returns null if already not pending
+    // (P2025 = record not found with that where clause)
+    let cancelledOrder
+    try {
+      cancelledOrder = await this.prisma.client.order.update({
+        where: { id: orderId, status: 'pending' },
+        data: { status: 'cancelled' },
+      })
+    } catch (err) {
+      if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
+        // Another worker already cancelled it, or order was paid/shipped
+        this.logger.log(`Order ${orderId} no longer pending — skipping cleanup`)
+        return
+      }
+      throw err
+    }
 
-    if (!order) return
+    if (!cancelledOrder) return
 
-    if (order.status === 'pending') {
-      this.logger.log(`Order ${orderId} expired. Cancelling and releasing stock.`)
+    this.logger.log(`Order ${orderId} expired. Cancelling and releasing stock.`)
 
-      await this.prisma.client.$transaction(async (tx) => {
-        // Cancel the order
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: 'cancelled' },
-        })
+    // Only one worker reaches here — safe to clean up
+    await this.prisma.client.$transaction(async (tx) => {
+      // Release stock reservations
+      await tx.stockReservation.deleteMany({
+        where: { orderId },
+      })
 
-        // Release stock reservations
-        await tx.stockReservation.deleteMany({
+      // Rollback coupon usage if a coupon was applied
+      if (cancelledOrder.couponId) {
+        await tx.couponUse.deleteMany({
           where: { orderId },
         })
 
-        // Rollback coupon usage if a coupon was applied
-        if (order.couponId) {
-          await tx.couponUse.deleteMany({
-            where: { orderId },
-          })
-
-          await tx.coupon.update({
-            where: { id: order.couponId },
-            data: { usedCount: { decrement: 1 } },
-          })
-        }
-      })
-    }
+        await tx.coupon.update({
+          where: { id: cancelledOrder.couponId },
+          data: { usedCount: { decrement: 1 } },
+        })
+      }
+    })
   }
 }

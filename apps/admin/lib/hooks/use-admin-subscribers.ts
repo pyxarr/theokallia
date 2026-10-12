@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import api from '@/lib/api'
-import type { SubscriberTag, Paginated } from '@theokallia/types'
+import type { SubscriberTag } from '@theokallia/types'
 
 export type NewsletterTab = 'all' | 'inactive' | SubscriberTag
 

@@ -146,7 +146,7 @@ export class PaymentsService {
   }
 
   /**
-   * Verifies the Paystack HMAC signature.
+   * Verifies the Paystack HMAC signature using constant-time comparison.
    */
   private verifySignature(signature: string, rawBody: string): boolean {
     const hash = crypto
@@ -154,6 +154,13 @@ export class PaymentsService {
       .update(rawBody)
       .digest('hex')
 
-    return hash === signature
+    const hashBuffer = Buffer.from(hash, 'hex')
+    const signatureBuffer = Buffer.from(signature, 'hex')
+
+    if (hashBuffer.length !== signatureBuffer.length) {
+      return false
+    }
+
+    return crypto.timingSafeEqual(hashBuffer, signatureBuffer)
   }
 }

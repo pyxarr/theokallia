@@ -62,11 +62,7 @@ interface UpdateCartItemPayload {
   quantity: number
 }
 
-// items from localStorage guest cart to merge into DB cart after login
-interface LocalCartItem {
-  productId: string
-  quantity: number
-}
+import type { LocalCartItem, SkippedCartItem, MergeCartResponse } from '@theokallia/types'
 
 // fetchers
 
@@ -95,7 +91,7 @@ const clearCart = async (): Promise<Cart> => {
   return res.data
 }
 
-const mergeCart = async (items: LocalCartItem[]): Promise<Cart> => {
+const mergeCart = async (items: LocalCartItem[]): Promise<MergeCartResponse> => {
   const res = await api.post('/cart/merge', { items })
   return res.data
 }
@@ -340,13 +336,25 @@ export const useClearCart = () => {
  * Merges the guest's localStorage cart into their DB cart after login.
  * Called once immediately after a successful login if localStorage has items.
  * After this resolves, the frontend clears localStorage and uses DB as source of truth.
+ * Shows a toast for any items that couldn't be merged (deleted or out of stock).
  */
 export const useMergeCart = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (items: LocalCartItem[]) => mergeCart(items),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // show toasts for skipped items
+      if (response.skippedItems?.length) {
+        for (const skipped of response.skippedItems) {
+          const reason = skipped.reason === 'deleted'
+            ? 'is no longer available'
+            : 'is out of stock'
+          toast.error(`${skipped.productName} ${reason} and was removed from your cart`, {
+            position: 'top-right',
+          })
+        }
+      }
       clearGuestCart()
       queryClient.invalidateQueries({ queryKey: ['cart'] })
     },

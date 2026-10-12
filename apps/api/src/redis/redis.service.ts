@@ -1,14 +1,11 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
-import Redis from 'ioredis'
+import { redis } from '../infra/clients'
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client: Redis
-
-  constructor(private config: ConfigService) {
-    // Connect to Redis using the URL from .env
-    this.client = new Redis(this.config.get<string>('REDIS_URL')!)
+  // Shared Redis connection from infra/clients
+  get client() {
+    return redis
   }
 
   onModuleInit() {
@@ -17,21 +14,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     // Gracefully close the Redis connection when the app shuts down
-    await this.client.quit()
+    await redis.quit()
   }
 
   // Store a key-value pair with a TTL in seconds
   async set(key: string, value: string, ttlSeconds: number): Promise<void> {
-    await this.client.set(key, value, 'EX', ttlSeconds)
+    await redis.set(key, value, 'EX', ttlSeconds)
   }
 
   // Retrieve a value by key — returns null if not found or expired
   async get(key: string): Promise<string | null> {
-    return this.client.get(key)
+    return redis.get(key)
   }
 
   // Delete a key — used after OTP is verified
   async del(key: string): Promise<void> {
-    await this.client.del(key)
+    await redis.del(key)
   }
 }

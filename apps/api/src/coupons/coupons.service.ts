@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import { ValidateCouponDto, CouponCartItemDto } from './dto/validate-coupon.dto'
 import { CreateCouponDto } from './dto/create-coupon.dto'
 import { UpdateCouponDto } from './dto/update-coupon.dto'
+import { FilterCouponsDto } from './dto/filter-coupons.dto'
 
 @Injectable()
 export class CouponsService {
@@ -66,12 +67,109 @@ export class CouponsService {
   }
 
   /**
-   * Returns all coupons for admin management, newest first.
+   * Atomically checks per-user limit and records coupon usage inside a transaction.
+   * Call this inside the order creation transaction to prevent race conditions.
+   * Throws if perUserLimit would be exceeded.
+   * Uses row-level locking (SELECT FOR UPDATE) on the coupon row to prevent
+   * concurrent check-then-insert races on couponUse.
    */
-  async findAll() {
-    return this.prisma.client.coupon.findMany({
-      orderBy: { createdAt: 'desc' },
+  async recordCouponUse(
+    tx: PrismaService['client'],
+    couponId: string,
+    userId: string,
+    orderId: string,
+    perUserLimit: number | null,
+  ): Promise<void> {
+    if (perUserLimit !== null) {
+      // Lock the coupon row FOR UPDATE to serialize concurrent access
+      // This prevents two transactions from both reading the same count
+      await tx.$executeRaw`SELECT 1 FROM "coupon" WHERE id = ${couponId} FOR UPDATE`
+
+      const userUseCount = await tx.couponUse.count({
+        where: { couponId, userId },
+      })
+
+      if (userUseCount >= perUserLimit) {
+        throw new BadRequestException(
+          'You have already redeemed this coupon the maximum allowed number of times.',
+        )
+      }
+    }
+
+    await tx.couponUse.create({
+      data: { couponId, userId, orderId },
     })
+
+    await tx.coupon.update({
+      where: { id: couponId },
+      data: { usedCount: { increment: 1 } },
+    })
+  }
+
+  /**
+   * Returns a paginated coupon list, optionally filtered by code search, type,
+   * scope, and active state. Pagination mirrors the subscribers listing.
+   */
+  async findAll(filters: FilterCouponsDto) {
+    const { q, active, type, scope, page = 1, limit = 20 } = filters
+    const skip = (page - 1) * limit
+    const search = q?.trim()
+
+    const where = {
+      ...(active !== undefined ? { active: active === 'true' } : {}),
+      ...(type ? { type } : {}),
+      ...(scope ? { scope } : {}),
+      ...(search
+        ? { code: { contains: search, mode: 'insensitive' as const } }
+        : {}),
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.client.coupon.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.coupon.count({ where }),
+    ])
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  }
+
+  /** Active/inactive, per-type, and per-scope totals for the coupon tab badges. */
+  async countByState() {
+    const [total, active, percent, fixed, freeShipping, storewide, category, product] =
+      await Promise.all([
+        this.prisma.client.coupon.count(),
+        this.prisma.client.coupon.count({ where: { active: true } }),
+        this.prisma.client.coupon.count({ where: { type: 'percent' } }),
+        this.prisma.client.coupon.count({ where: { type: 'fixed' } }),
+        this.prisma.client.coupon.count({ where: { type: 'free_shipping' } }),
+        this.prisma.client.coupon.count({ where: { scope: 'storewide' } }),
+        this.prisma.client.coupon.count({ where: { scope: 'category' } }),
+        this.prisma.client.coupon.count({ where: { scope: 'product' } }),
+      ])
+
+    return {
+      total,
+      active,
+      inactive: total - active,
+      percent,
+      fixed,
+      free_shipping: freeShipping,
+      storewide,
+      category,
+      product,
+    }
   }
 
   /**

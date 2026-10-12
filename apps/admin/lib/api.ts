@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { env } from '@/lib/env'
 
 export const API_VERSION = 'v1'
 

@@ -39,7 +39,7 @@ export class OrdersService {
     }
 
     // Resolve which shipping zone applies based on the delivery address
-    const zoneName = resolveShippingZone(dto.shippingAddress)
+    const zoneName = await resolveShippingZone(dto.shippingAddress)
 
     // Fetch the zone record to get the rate — zone must exist in the database
     const shippingZone = await this.prisma.client.shippingZone.findUnique({
@@ -145,6 +145,7 @@ export class OrdersService {
       // Authoritative coupon re-validation inside transaction — never trust pre-flight result
       let transactionDiscount = 0
       let transactionCouponId: string | null = couponId
+      let transactionCouponPerUserLimit: number | null = null
 
       if (dto.couponCode && couponId) {
         const cartItemsForValidation = cart.items.map((item) => ({
@@ -166,6 +167,13 @@ export class OrdersService {
         }
 
         transactionCouponId = revalidated.couponId
+
+        // Fetch perUserLimit for atomic recording inside transaction
+        const coupon = await tx.coupon.findUnique({
+          where: { id: transactionCouponId },
+          select: { perUserLimit: true },
+        })
+        transactionCouponPerUserLimit = coupon?.perUserLimit ?? null
       }
 
       const total = Math.max(0, subtotal - transactionDiscount + shippingFee)
@@ -199,20 +207,15 @@ export class OrdersService {
         where: { cartId: cart.id },
       })
 
-      // Record coupon usage and increment usedCount atomically inside the transaction
+      // Atomically record coupon usage with per-user limit check inside transaction
       if (transactionCouponId) {
-        await tx.couponUse.create({
-          data: {
-            couponId: transactionCouponId,
-            userId,
-            orderId: order.id,
-          },
-        })
-
-        await tx.coupon.update({
-          where: { id: transactionCouponId },
-          data: { usedCount: { increment: 1 } },
-        })
+        await this.couponsService.recordCouponUse(
+          tx,
+          transactionCouponId,
+          userId,
+          order.id,
+          transactionCouponPerUserLimit,
+        )
       }
 
       await this.ordersQueue.add(
@@ -340,14 +343,16 @@ export class OrdersService {
   /**
    * Promotes a customer to VIP once they cross either SiteConfig threshold
    * (order count or lifetime spend), then alerts the business and tags their
-   * subscriber record. No-op when SiteConfig is missing or the customer is
-   * already VIP, so repeated payments never double-fire side effects.
+   * subscriber record. No-op when the customer is already VIP.
    */
   async evaluateVip(userId: string) {
-    const config = await this.prisma.client.siteConfig.findFirst()
-
-    if (!config) {
-      return
+    // Singleton row (id: 'singleton') guaranteed by migration.
+    // Fallback to defaults if row somehow missing.
+    const config = await this.prisma.client.siteConfig.findUnique({
+      where: { id: 'singleton' },
+    }) ?? {
+      vipOrderThreshold: 3,
+      vipSpendThreshold: 200000,
     }
 
     const user = await this.prisma.client.user.findUnique({
@@ -448,6 +453,8 @@ export class OrdersService {
     }
   }
 
+  import { fetchProductAssets } from '../utils/attach-assets'
+
   /**
    * Attaches polymorphic Product assets to each order item so admin tables can
    * render thumbnails — mirrors the customer-facing order serializers, since
@@ -463,17 +470,7 @@ export class OrdersService {
       ),
     ]
 
-    const assets = await this.prisma.client.asset.findMany({
-      where: { entityType: 'Product', entityId: { in: productIds } },
-      orderBy: { sortOrder: 'asc' },
-    })
-
-    const assetMap = new Map<string, Asset[]>()
-    for (const asset of assets) {
-      const group = assetMap.get(asset.entityId) ?? []
-      group.push(asset)
-      assetMap.set(asset.entityId, group)
-    }
+    const assetMap = await fetchProductAssets(this.prisma.client, productIds)
 
     return orders.map((order) => ({
       ...order,

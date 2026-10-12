@@ -8,6 +8,7 @@ import { AddToCartDto } from './dto/add-to-cart.dto'
 import { UpdateCartItemDto } from './dto/update-cart-item.dto'
 import { MergeCartDto } from './dto/merge-cart.dto'
 import { ValidateGuestCartDto } from './dto/validate-guest-cart.dto'
+import type { SkippedCartItem } from '@theokallia/types'
 
 @Injectable()
 export class CartService {
@@ -46,6 +47,8 @@ export class CartService {
     })
   }
 
+  import { fetchProductAssets } from '../utils/attach-assets'
+
   /**
    * Merges assets into each cart item's product by fetching them in a single batch query.
    * Assets are polymorphic (entityType + entityId) so Prisma can't include them directly.
@@ -53,24 +56,9 @@ export class CartService {
   private async attachAssets(
     items: Array<{ product: { id: string } }>,
   ) {
-    const ids = [...new Set(items.map((i) => i.product.id))]
-    if (ids.length === 0) return
-
-    const assets = await this.prisma.client.asset.findMany({
-      where: { entityType: 'Product', entityId: { in: ids } },
-      orderBy: { sortOrder: 'asc' },
-    })
-
-    const map = new Map<string, (typeof assets)[number][]>()
-    for (const asset of assets) {
-      const group = map.get(asset.entityId) ?? []
-      group.push(asset)
-      map.set(asset.entityId, group)
-    }
-
-    // mutate cart items in-place — caller already has the reference
+    const assetMap = await fetchProductAssets(this.prisma.client, items.map(i => i.product.id))
     for (const item of items) {
-      ;(item.product as Record<string, unknown>).assets = map.get(item.product.id) ?? []
+      ;(item.product as Record<string, unknown>).assets = assetMap.get(item.product.id) ?? []
     }
   }
 
@@ -252,27 +240,42 @@ export class CartService {
    * POST /cart/merge — called immediately after login.
    * Takes the guest's localStorage items and upserts them into their DB cart.
    * If the user already has a cart item for the same product, quantities are summed.
+   * Skipped items (deleted or out of stock) are returned so the frontend can notify the user.
    * After this call, the frontend clears localStorage and switches to DB as source of truth.
    */
   async mergeCart(userId: string, dto: MergeCartDto) {
     if (!dto.items.length) {
-      // nothing to merge — just return the existing DB cart
-      return this.getCart(userId)
+      // nothing to merge — just return the existing DB cart with empty skippedItems
+      return { cart: await this.getCart(userId), skippedItems: [] }
     }
 
     const cart = await this.getOrCreateCart(userId)
+
+    // track items that couldn't be merged so frontend can show a toast
+    const skippedItems: SkippedCartItem[] = []
+
+    // Batch fetch all products in a single query — avoids N+1
+    const productIds = dto.items.map((item) => item.productId)
+    const products = await this.prisma.client.product.findMany({
+      where: { id: { in: productIds } },
+    })
+    const productMap = new Map(products.map((p) => [p.id, p]))
 
     // upsert each localStorage item into the DB cart
     // prisma.$transaction ensures all upserts succeed or all roll back
     await this.prisma.client.$transaction(
       async (tx) => {
         for (const item of dto.items) {
-          // fetch product to get current stock
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-          })
+          const product = productMap.get(item.productId)
 
-          if (!product || !product.inStock) continue // skip unavailable products silently
+          if (!product) {
+            skippedItems.push({ productId: item.productId, productName: 'Unknown Product', reason: 'deleted' })
+            continue
+          }
+          if (!product.inStock) {
+            skippedItems.push({ productId: item.productId, productName: product.name, reason: 'out_of_stock' })
+            continue
+          }
 
           // check what's already in the cart for this product
           const existing = await tx.cartItem.findUnique({
@@ -302,7 +305,7 @@ export class CartService {
       }
     )
 
-    return this.getCart(userId)
+    return { cart: await this.getCart(userId), skippedItems }
   }
 
   /**

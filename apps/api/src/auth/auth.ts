@@ -1,37 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { Queue } from 'bullmq'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({
-    connectionString: process.env.DATABASE_URL!,
-  }),
-})
-
-// Mail queue — mirrors the BullMQ queue in MailModule
-const mailQueue = new Queue('mail', {
-  connection: {
-    url: process.env.REDIS_URL,
-  },
-})
-
-// Subscribers queue — mirrors the BullMQ queue in SubscribersModule
-const subscribersQueue = new Queue('subscribers', {
-  connection: {
-    url: process.env.REDIS_URL,
-  },
-})
-
-// Graceful shutdown for standalone clients (this file runs outside Nest DI)
-const shutdown = async () => {
-  await Promise.all([prisma.$disconnect(), mailQueue.close(), subscribersQueue.close()])
-  process.exit(0)
-}
-
-process.on('SIGTERM', shutdown)
-process.on('SIGINT', shutdown)
+import { prisma, mailQueue, subscribersQueue, shutdown } from '../infra/clients'
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,

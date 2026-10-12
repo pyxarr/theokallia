@@ -289,7 +289,7 @@ model RefreshToken {
   @@map("refresh_token")
 }
 
-// Zone matching logic (state/country → zone name) lives in code, not the database.
+// Zone matching logic (state/country → zone name) lives in the database.
 // See apps/api/src/orders/shipping-zone-mapping.config.ts
 model ShippingZone {
   id        String   @id @default(cuid())
@@ -297,10 +297,22 @@ model ShippingZone {
   rate      Float
   active    Boolean  @default(true)
   orders    Order[]
+  states    ShippingZoneState[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("shipping_zone")
+}
+
+model ShippingZoneState {
+  id             String        @id @default(cuid())
+  state          String        // e.g., "Lagos", "Rivers"
+  shippingZone   ShippingZone  @relation(fields: [shippingZoneId], references: [id])
+  shippingZoneId String
+  createdAt      DateTime      @default(now())
+
+  @@unique([shippingZoneId, state])
+  @@map("shipping_zone_state")
 }
 
 model Coupon {
@@ -360,9 +372,9 @@ model Subscriber {
 }
 
 // Single-row settings table. Only one row ever exists.
-// Always query with findFirst(). Create a default row if none exists.
+
 model SiteConfig {
-  id                      String   @id @default(cuid())
+  id                      String   @id @default("singleton")
   vipOrderThreshold       Int      @default(3)
   vipSpendThreshold       Float    @default(200000)
   welcomeDiscountPercent  Int      @default(10)
