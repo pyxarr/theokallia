@@ -16,6 +16,7 @@ import {
   UpdateOrderStatusDto,
 } from './dto/admin-orders.dto'
 import { validateStatusTransition } from './order-transitions.config'
+import { fetchProductAssets } from '../utils/attach-assets'
 
 @Injectable()
 export class OrdersService {
@@ -452,8 +453,6 @@ export class OrdersService {
       },
     }
   }
-
-  import { fetchProductAssets } from '../utils/attach-assets'
 
   /**
    * Attaches polymorphic Product assets to each order item so admin tables can
