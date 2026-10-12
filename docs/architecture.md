@@ -299,6 +299,9 @@ model OrderItem {
 - `WishlistItem` has `@@unique([wishlistId, productId])` — one entry per product per wishlist, no quantity
 
 ## 5. Shared Types
+
+**Principle:** Any type, interface, or enum used by two or more packages MUST be defined in `@theokallia/types`. No mirroring or re-declaring across `apps/api`, `apps/web`, `apps/admin`, or other workspace packages.
+
 ```ts
 export interface User {
   id: string

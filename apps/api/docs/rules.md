@@ -41,6 +41,7 @@ this.prisma.product.findMany(...)
 ## Imports & Types
 - `VersioningType` imports from `@nestjs/common`, not `@nestjs/core`.
 - `Record<K, V>` always needs both type arguments; never use `as Record<K>` casting.
+- **All shared types, interfaces, and enums are defined in `@theokallia/types`.** Do not redeclare them locally. Import with `import type { X } from '@theokallia/types'`.
 
 ## Validation
 - Keep `enableImplicitConversion: true` in `ValidationPipe`; without it `minPrice`/`maxPrice` arrive as strings.

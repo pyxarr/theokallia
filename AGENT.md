@@ -70,11 +70,13 @@ Summary:
 - TypeScript must compile (`npx tsc --noEmit`) and ESLint must pass before reporting completion.
 - For Next.js apps run `npx next typegen` before `npx tsc --noEmit`; without it `.next/types` is missing and typecheck fails.
 - Canonical shared types live in `@theokallia/types` (`asset`, `enums`, `upload`, `common`). Import them in all three apps; never redeclare them locally.
+- **Any type, interface, or enum used by two or more packages MUST be defined in `@theokallia/types`.** No mirroring or re-declaring across `apps/api`, `apps/web`, `apps/admin`, or other workspace packages.
 - API code imports types from `@theokallia/types`; re-export with `export type { X } from '@theokallia/types'` when consumers import from a local module.
 
 ## Never Do
 - Use `any` in TypeScript.
 - Call `nodemailer.sendMail()` directly.
+- **Define a type, interface, or enum in more than one package.** If it's shared, it lives in `@theokallia/types` — import it everywhere.
 - Declare local copies of a type that already exists in `@theokallia/types`; import it from there instead.
 - Use `this.prisma.product.findMany()`; always use `this.prisma.client.xyz`.
 - Hardcode `API_VERSION`; always import it from `lib/api.ts`.

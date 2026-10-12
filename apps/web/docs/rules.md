@@ -49,6 +49,10 @@
 - Font classes: `font-cormorant-garamond`, `font-le-jour`, `font-allure`.
 - pnpm only.
 
+## Shared Types
+- **All shared types, interfaces, and enums are defined in `@theokallia/types`.** Do not redeclare them locally. Import with `import type { X } from '@theokallia/types'`.
+- The `@theokallia/types` package exports: `user`, `product`, `category`, `review`, `order`, `asset`, `enums`, `upload`, `common`.
+
 ## Naming Conventions
 | Thing | Convention | Example |
 |---|---|---|
