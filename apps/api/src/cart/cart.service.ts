@@ -9,6 +9,7 @@ import { UpdateCartItemDto } from './dto/update-cart-item.dto'
 import { MergeCartDto } from './dto/merge-cart.dto'
 import { ValidateGuestCartDto } from './dto/validate-guest-cart.dto'
 import type { SkippedCartItem } from '@theokallia/types'
+import { fetchProductAssets } from '../utils/attach-assets'
 
 @Injectable()
 export class CartService {
@@ -46,8 +47,6 @@ export class CartService {
       },
     })
   }
-
-  import { fetchProductAssets } from '../utils/attach-assets'
 
   /**
    * Merges assets into each cart item's product by fetching them in a single batch query.
