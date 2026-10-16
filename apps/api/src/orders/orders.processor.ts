@@ -4,7 +4,7 @@ import { Job } from 'bullmq'
 import { PrismaService } from '../prisma/prisma.service'
 import { OrdersService } from './orders.service'
 import { CouponsService } from '../coupons/coupons.service'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import { Prisma } from '@prisma/client'
 
 @Processor('orders')
 export class OrdersProcessor extends WorkerHost {
@@ -39,7 +39,7 @@ export class OrdersProcessor extends WorkerHost {
         data: { status: 'cancelled' },
       })
     } catch (err) {
-      if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
         // Another worker already cancelled it, or order was paid/shipped
         this.logger.log(`Order ${orderId} no longer pending — skipping cleanup`)
         return

@@ -30,7 +30,6 @@
     "seed:admin": "dotenv -e .env -- ts-node seed-admin.ts"
   },
   "dependencies": {
-    "@nestjs/bull": "^11.0.4",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
@@ -52,7 +51,6 @@
     "@upstash/redis": "^1.38.0",
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.20",
-    "bull": "^4.16.5",
     "bullmq": "^5.71.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -60,7 +58,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "helmet": "^8.1.0",
-    "ioredis": "^5.10.1",
+    "ioredis": "5.10.1",
     "joi": "^18.1.1",
     "jsonwebtoken": "^9.0.3",
     "passport": "^0.7.0",
@@ -81,7 +79,6 @@
     "@nestjs/testing": "^11.0.1",
     "@theokallia/typescript-config": "workspace:*",
     "@types/bcryptjs": "^3.0.0",
-    "@types/bull": "^4.10.4",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",

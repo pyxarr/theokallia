@@ -4,6 +4,7 @@ import { ValidateCouponDto, CouponCartItemDto } from './dto/validate-coupon.dto'
 import { CreateCouponDto } from './dto/create-coupon.dto'
 import { UpdateCouponDto } from './dto/update-coupon.dto'
 import { FilterCouponsDto } from './dto/filter-coupons.dto'
+import { Prisma } from '@prisma/client'
 
 @Injectable()
 export class CouponsService {
@@ -74,7 +75,7 @@ export class CouponsService {
    * concurrent check-then-insert races on couponUse.
    */
   async recordCouponUse(
-    tx: PrismaService['client'],
+    tx: Prisma.TransactionClient,
     couponId: string,
     userId: string,
     orderId: string,

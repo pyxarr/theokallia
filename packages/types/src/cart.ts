@@ -1,3 +1,5 @@
+import type { Asset } from './asset'
+
 /** Cart item from guest localStorage — merged into DB cart on login. */
 export interface LocalCartItem {
   productId: string
