@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -72,6 +72,7 @@ export default function OrdersPage() {
           </p>
         </div>
         <Select
+          items={statusFilters}
           value={status}
           onValueChange={(value) => setStatus(value as AdminOrderStatus | 'all')}
         >
@@ -162,11 +163,13 @@ export default function OrdersPage() {
                     ₦{order.total.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button asChild variant="ghost" size="icon">
-                      <Link href={`/orders/${order.id}`} aria-label="View order">
-                        <Eye className="size-4" />
-                      </Link>
-                    </Button>
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+                      aria-label="View order"
+                    >
+                      <Eye className="size-4" />
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Crown, Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -172,14 +172,13 @@ export default function CustomersPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button asChild variant="ghost" size="icon">
-                      <Link
-                        href={`/customers/${customer.id}`}
-                        aria-label="View customer"
-                      >
-                        <Eye className="size-4" />
-                      </Link>
-                    </Button>
+                    <Link
+                      href={`/customers/${customer.id}`}
+                      className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+                      aria-label="View customer"
+                    >
+                      <Eye className="size-4" />
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

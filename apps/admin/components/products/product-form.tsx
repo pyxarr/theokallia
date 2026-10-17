@@ -40,6 +40,11 @@ import {
   type ProductFormValues,
 } from '@/lib/validations/product'
 
+const stockItems = [
+  { value: 'true', label: 'In stock' },
+  { value: 'false', label: 'Out of stock' },
+]
+
 interface ProductFormProps {
   /** Present in edit mode; absent on the create form. */
   slug?: string
@@ -114,6 +119,15 @@ export default function ProductForm({ slug }: ProductFormProps) {
   const subcategories =
     categories.find((category) => category.slug === categorySlug)
       ?.subcategories ?? []
+
+  const categoryItems = categories.map((category) => ({
+    value: category.slug,
+    label: category.name,
+  }))
+  const subcategoryItems = subcategories.map((subcategory) => ({
+    value: subcategory.slug,
+    label: subcategory.name,
+  }))
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
@@ -291,6 +305,7 @@ export default function ProductForm({ slug }: ProductFormProps) {
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="inStock">Availability</Label>
                   <Select
+                    items={stockItems}
                     value={String(watch('inStock'))}
                     onValueChange={(value) =>
                       setValue('inStock', value === 'true')
@@ -300,8 +315,11 @@ export default function ProductForm({ slug }: ProductFormProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="true">In stock</SelectItem>
-                      <SelectItem value="false">Out of stock</SelectItem>
+                      {stockItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -320,8 +338,10 @@ export default function ProductForm({ slug }: ProductFormProps) {
               <div className="flex flex-col gap-2">
                 <Label htmlFor="categorySlug">Category</Label>
                 <Select
+                  items={categoryItems}
                   value={categorySlug || ''}
                   onValueChange={(value) => {
+                    if (value == null) return
                     setValue('categorySlug', value, { shouldValidate: true })
                     setValue('subcategorySlug', '')
                   }}
@@ -330,9 +350,9 @@ export default function ProductForm({ slug }: ProductFormProps) {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.slug}>
-                        {category.name}
+                    {categoryItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -346,17 +366,20 @@ export default function ProductForm({ slug }: ProductFormProps) {
               <div className="flex flex-col gap-2">
                 <Label htmlFor="subcategorySlug">Subcategory (optional)</Label>
                 <Select
+                  items={subcategoryItems}
                   value={watch('subcategorySlug') || ''}
-                  onValueChange={(value) => setValue('subcategorySlug', value)}
+                  onValueChange={(value) =>
+                    setValue('subcategorySlug', value ?? '')
+                  }
                   disabled={subcategories.length === 0}
                 >
                   <SelectTrigger id="subcategorySlug">
                     <SelectValue placeholder="Select a subcategory" />
                   </SelectTrigger>
                   <SelectContent>
-                    {subcategories.map((subcategory) => (
-                      <SelectItem key={subcategory.id} value={subcategory.slug}>
-                        {subcategory.name}
+                    {subcategoryItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -51,8 +51,8 @@ export default function AdminTopbar() {
       <Breadcrumb className="hidden sm:block">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Admin</Link>
+            <BreadcrumbLink render={<Link href="/dashboard" />}>
+              Admin
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -66,15 +66,15 @@ export default function AdminTopbar() {
         <Badge className="hidden bg-[#F3E8FF] text-[#7E22CE] sm:inline-flex">Admin</Badge>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-9 gap-2 px-2">
-              <Avatar className="size-7">
-                <AvatarFallback className="bg-[#7E22CE] text-xs text-white">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="hidden text-sm md:inline">{displayName}</span>
-            </Button>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" className="h-9 gap-2 px-2" />}
+          >
+            <Avatar className="size-7">
+              <AvatarFallback className="bg-[#7E22CE] text-xs text-white">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="hidden text-sm md:inline">{displayName}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="truncate">

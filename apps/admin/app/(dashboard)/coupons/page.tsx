@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Power, PowerOff, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -169,12 +169,10 @@ export default function CouponsPage() {
             {debouncedSearch ? ` matching “${debouncedSearch}”` : ''}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/coupons/new">
-            <Plus className="mr-2 size-4" />
-            New Coupon
-          </Link>
-        </Button>
+        <Link href="/coupons/new" className={buttonVariants()}>
+          <Plus className="mr-2 size-4" />
+          New Coupon
+        </Link>
       </div>
 
       <Card>
@@ -311,16 +309,16 @@ export default function CouponsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
+                      <Link
+                        href={`/coupons/${coupon.id}/edit`}
+                        className={buttonVariants({
+                          variant: 'ghost',
+                          size: 'icon',
+                        })}
                         aria-label={`Edit ${coupon.code}`}
                       >
-                        <Link href={`/coupons/${coupon.id}/edit`}>
-                          <Pencil className="size-4" />
-                        </Link>
-                      </Button>
+                        <Pencil className="size-4" />
+                      </Link>
                       <Button
                         variant="ghost"
                         size="icon"

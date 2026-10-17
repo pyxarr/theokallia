@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import {
   useAdminMetrics,
   useAdminOrders,
@@ -108,9 +108,12 @@ export default function DashboardPage() {
               The five newest orders across all statuses.
             </CardDescription>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/orders">View all orders</Link>
-          </Button>
+          <Link
+            href="/orders"
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+          >
+            View all orders
+          </Link>
         </CardHeader>
         <CardContent>
           <Table>

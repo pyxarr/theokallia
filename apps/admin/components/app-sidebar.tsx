@@ -83,20 +83,18 @@ export default function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center bg-[#7E22CE] text-sm font-semibold text-white">
-                  T
-                </div>
-                <div className="grid flex-1 text-left leading-tight">
-                  <span className="truncate font-le-jour tracking-wide uppercase">
-                    Theokallia
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    Admin
-                  </span>
-                </div>
-              </Link>
+            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
+              <div className="flex aspect-square size-8 items-center justify-center bg-[#7E22CE] text-sm font-semibold text-white">
+                T
+              </div>
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="truncate font-le-jour tracking-wide uppercase">
+                  Theokallia
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  Admin
+                </span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -111,14 +109,12 @@ export default function AppSidebar() {
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                      asChild
+                      render={<Link href={item.href} />}
                       isActive={pathname.startsWith(item.href)}
                       tooltip={item.title}
                     >
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
+                      <item.icon />
+                      <span>{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -131,15 +127,18 @@ export default function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Back to storefront">
-              <a
-                href={process.env.NEXT_PUBLIC_APP_URL ?? '#'}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Mail />
-                <span>View Storefront</span>
-              </a>
+            <SidebarMenuButton
+              render={
+                <a
+                  href={process.env.NEXT_PUBLIC_APP_URL ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+              tooltip="Back to storefront"
+            >
+              <Mail />
+              <span>View Storefront</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation'
 import { Crown, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -300,9 +300,12 @@ export default function CustomerDetailPage() {
                     ₦{order.total.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/orders/${order.id}`}>View</Link>
-                    </Button>
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                    >
+                      View
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

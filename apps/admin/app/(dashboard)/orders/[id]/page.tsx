@@ -240,6 +240,10 @@ export default function OrderDetailPage() {
             <div className="flex flex-col gap-2">
               <Label htmlFor="next-status">New status</Label>
               <Select
+                items={allowedStatuses.map((status) => ({
+                  value: status,
+                  label: status,
+                }))}
                 value={nextStatus}
                 onValueChange={(value) =>
                   setNextStatus(value as AdminOrderStatus)

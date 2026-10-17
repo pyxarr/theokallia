@@ -39,6 +39,24 @@ import {
   type CouponFormValues,
 } from '@/lib/validations/coupon'
 
+/** Select options — Base UI renders `label` in the trigger, not the raw value. */
+const discountTypeItems = [
+  { value: 'percent', label: 'Percentage off' },
+  { value: 'fixed', label: 'Fixed amount (₦)' },
+  { value: 'free_shipping', label: 'Free shipping' },
+]
+
+const scopeItems = [
+  { value: 'storewide', label: 'Storewide' },
+  { value: 'category', label: 'Category' },
+  { value: 'product', label: 'Product' },
+]
+
+const availabilityItems = [
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Inactive' },
+]
+
 /**
  * Converts a stored ISO timestamp into the `YYYY-MM-DDTHH:mm` shape a
  * `<input type="datetime-local">` requires. Returns undefined when there is no
@@ -129,6 +147,11 @@ export default function CouponForm({ id }: CouponFormProps) {
         ? flatProducts
         : []
 
+  const scopeIdItems = categoryOptions.map((item) => ({
+    value: item.id,
+    label: item.name,
+  }))
+
   const isScoped = scope === 'category' || scope === 'product'
 
   const onSubmit = async (values: CouponFormValues) => {
@@ -211,6 +234,7 @@ export default function CouponForm({ id }: CouponFormProps) {
             <div className="flex flex-col gap-2">
               <Label htmlFor="type">Discount type</Label>
               <Select
+                items={discountTypeItems}
                 value={type}
                 onValueChange={(value) => {
                   const nextType = value as CouponFormValues['type']
@@ -224,9 +248,11 @@ export default function CouponForm({ id }: CouponFormProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="percent">Percentage off</SelectItem>
-                  <SelectItem value="fixed">Fixed amount (₦)</SelectItem>
-                  <SelectItem value="free_shipping">Free shipping</SelectItem>
+                  {discountTypeItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -256,8 +282,10 @@ export default function CouponForm({ id }: CouponFormProps) {
             <div className="flex flex-col gap-2">
               <Label htmlFor="scope">Scope</Label>
               <Select
+                items={scopeItems}
                 value={scope}
                 onValueChange={(value) => {
+                  if (value == null) return
                   setValue('scope', value as CouponFormValues['scope'])
                   setValue('scopeId', undefined)
                 }}
@@ -266,9 +294,11 @@ export default function CouponForm({ id }: CouponFormProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="storewide">Storewide</SelectItem>
-                  <SelectItem value="category">Category</SelectItem>
-                  <SelectItem value="product">Product</SelectItem>
+                  {scopeItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -281,6 +311,7 @@ export default function CouponForm({ id }: CouponFormProps) {
               </Label>
               <Select
                 key={scope}
+                items={scopeIdItems}
                 value={scopeId ?? ''}
                 onValueChange={(value) => setValue('scopeId', value || undefined)}
                 disabled={categoryOptions.length === 0}
@@ -289,9 +320,9 @@ export default function CouponForm({ id }: CouponFormProps) {
                   <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
+                  {scopeIdItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -399,6 +430,7 @@ export default function CouponForm({ id }: CouponFormProps) {
           <div className="flex flex-col gap-2">
             <Label htmlFor="active">Availability</Label>
             <Select
+              items={availabilityItems}
               value={String(watch('active'))}
               onValueChange={(value) =>
                 setValue('active', value === 'true')
@@ -408,8 +440,11 @@ export default function CouponForm({ id }: CouponFormProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
+                {availabilityItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

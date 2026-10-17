@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -57,12 +57,10 @@ export default function ProductsPage() {
             {totalCount} product{totalCount === 1 ? '' : 's'} in the catalog
           </p>
         </div>
-        <Button asChild>
-          <Link href="/products/new">
-            <Plus className="mr-2 size-4" />
-            New Product
-          </Link>
-        </Button>
+        <Link href="/products/new" className={buttonVariants()}>
+          <Plus className="mr-2 size-4" />
+          New Product
+        </Link>
       </div>
 
       <Card>
@@ -138,14 +136,16 @@ export default function ProductsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button asChild variant="ghost" size="icon">
-                        <Link
-                          href={`/products/${product.slug}/edit`}
-                          aria-label={`Edit ${product.name}`}
-                        >
-                          <Pencil className="size-4" />
-                        </Link>
-                      </Button>
+                      <Link
+                        href={`/products/${product.slug}/edit`}
+                        className={buttonVariants({
+                          variant: 'ghost',
+                          size: 'icon',
+                        })}
+                        aria-label={`Edit ${product.name}`}
+                      >
+                        <Pencil className="size-4" />
+                      </Link>
                       <Button
                         variant="ghost"
                         size="icon"
