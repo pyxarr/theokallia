@@ -33,14 +33,13 @@ export class ShippingZonesService {
    * Returns every shipping zone — active and inactive — ordered by
    * creation date, with ids so the admin UI can edit a specific row.
    */
-  async findAll(): Promise<ShippingZone[]> {
-    const zones = await this.prisma.client.shippingZone.findMany({
+  async findAll(): Promise<Array<Pick<ShippingZone, 'id' | 'name' | 'rate' | 'active'>>> {
+    // Only the four editable columns are selected — the relation and
+    // timestamp columns of the full row are never needed here.
+    return this.prisma.client.shippingZone.findMany({
       select: { id: true, name: true, rate: true, active: true },
       orderBy: { createdAt: 'asc' },
     })
-    // Only the four editable columns are selected — the relation and
-    // timestamp columns of the full row are never needed here.
-    return zones as ShippingZone[]
   }
 
   /**

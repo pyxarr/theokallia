@@ -71,4 +71,12 @@ describe('ShippingZonesService', () => {
 
     expect(result).toEqual(updated)
   })
+
+  it('rejects an update that collides with another zone name', async () => {
+    const existing = { id: 'a', name: 'Nationwide', rate: 2500, active: true }
+    zoneDelegate.findUnique.mockResolvedValueOnce(existing)
+    zoneDelegate.update.mockRejectedValueOnce({ code: 'P2002' })
+
+    await expect(service.update('a', { name: 'Lagos' })).rejects.toThrow(/already exists/i)
+  })
 })

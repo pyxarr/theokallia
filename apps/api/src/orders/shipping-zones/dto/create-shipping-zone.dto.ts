@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator'
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+  Min,
+} from 'class-validator'
 
 /**
  * DTO for creating a shipping zone.
@@ -11,6 +19,7 @@ export class CreateShippingZoneDto {
   @ApiProperty({ example: 'Nationwide' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/)
   name: string
 
   /** Flat NGN delivery rate charged for this zone. */
