@@ -239,145 +239,150 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>VIP thresholds</CardTitle>
-          <CardDescription>
-            Customers are promoted to VIP once they cross either threshold.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          {isConfigLoading ? (
-            <>
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-            </>
-          ) : configErrorMessage ? (
-            <p role="alert" className="text-sm text-destructive sm:col-span-2">
-              {configErrorMessage}
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="vipOrderThreshold">
-                  Order count threshold
-                </Label>
-                <Input
-                  id="vipOrderThreshold"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={form.vipOrderThreshold}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      vipOrderThreshold: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="vipSpendThreshold">
-                  Lifetime spend threshold (NGN)
-                </Label>
-                <Input
-                  id="vipSpendThreshold"
-                  type="number"
-                  min={0}
-                  step="any"
-                  value={form.vipSpendThreshold}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      vipSpendThreshold: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {configErrorMessage && (
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
+        >
+          {configErrorMessage}
+        </p>
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Welcome discount</CardTitle>
-          <CardDescription>
-            Applied to new customers through a single-use welcome coupon.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          {isConfigLoading ? (
-            <>
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-            </>
-          ) : configErrorMessage ? (
-            <p role="alert" className="text-sm text-destructive sm:col-span-2">
-              {configErrorMessage}
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="welcomeDiscountPercent">
-                  Discount percent
-                </Label>
-                <Input
-                  id="welcomeDiscountPercent"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={form.welcomeDiscountPercent}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      welcomeDiscountPercent: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="welcomeDiscountMinOrder">
-                  Minimum order (NGN)
-                </Label>
-                <Input
-                  id="welcomeDiscountMinOrder"
-                  type="number"
-                  min={0}
-                  step="any"
-                  value={form.welcomeDiscountMinOrder}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      welcomeDiscountMinOrder: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="welcomeDiscountExpiry">
-                  Expires after (days)
-                </Label>
-                <Input
-                  id="welcomeDiscountExpiry"
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={form.welcomeDiscountExpiry}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      welcomeDiscountExpiry: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {configErrorMessage === null && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>VIP thresholds</CardTitle>
+              <CardDescription>
+                Customers are promoted to VIP once they cross either threshold.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {isConfigLoading ? (
+                <>
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="vipOrderThreshold">
+                      Order count threshold
+                    </Label>
+                    <Input
+                      id="vipOrderThreshold"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={form.vipOrderThreshold}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          vipOrderThreshold: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="vipSpendThreshold">
+                      Lifetime spend threshold (NGN)
+                    </Label>
+                    <Input
+                      id="vipSpendThreshold"
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={form.vipSpendThreshold}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          vipSpendThreshold: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Welcome discount</CardTitle>
+              <CardDescription>
+                Applied to new customers through a single-use welcome coupon.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {isConfigLoading ? (
+                <>
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="welcomeDiscountPercent">
+                      Discount percent
+                    </Label>
+                    <Input
+                      id="welcomeDiscountPercent"
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={form.welcomeDiscountPercent}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          welcomeDiscountPercent: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="welcomeDiscountMinOrder">
+                      Minimum order (NGN)
+                    </Label>
+                    <Input
+                      id="welcomeDiscountMinOrder"
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={form.welcomeDiscountMinOrder}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          welcomeDiscountMinOrder: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="welcomeDiscountExpiry">
+                      Expires after (days)
+                    </Label>
+                    <Input
+                      id="welcomeDiscountExpiry"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={form.welcomeDiscountExpiry}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          welcomeDiscountExpiry: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -416,10 +421,9 @@ export default function SettingsPage() {
                 <TableRow>
                   <TableCell
                     colSpan={3}
-                    role="alert"
                     className="text-center text-destructive"
                   >
-                    {zonesErrorMessage}
+                    <p role="alert">{zonesErrorMessage}</p>
                   </TableCell>
                 </TableRow>
               )}
