@@ -53,21 +53,23 @@ const STATE_TO_ZONE = {
 async function main() {
   console.log('Seeding shipping zones, zone states, and site config...')
 
-  // Upsert default shipping zones
+  // Upsert default shipping zones.
+  // The `update` branches are empty on purpose: an admin may have edited
+  // the rate or switched a zone off, and a re-seed must not undo that.
   const [lagosZone, nationwideZone, internationalZone] = await Promise.all([
     prisma.shippingZone.upsert({
       where: { name: 'Lagos' },
-      update: { rate: 3000.0, active: true },
+      update: {},
       create: { name: 'Lagos', rate: 3000.0, active: true },
     }),
     prisma.shippingZone.upsert({
       where: { name: 'Nationwide' },
-      update: { rate: 6000.0, active: true },
+      update: {},
       create: { name: 'Nationwide', rate: 6000.0, active: true },
     }),
     prisma.shippingZone.upsert({
       where: { name: 'International' },
-      update: { rate: 35000.0, active: true },
+      update: {},
       create: { name: 'International', rate: 35000.0, active: true },
     }),
   ])
@@ -87,20 +89,17 @@ async function main() {
   console.log('Zone states seeded.')
 
   // Create/upsert SiteConfig singleton (id: 'singleton')
-  // Deletes any old rows with random IDs, ensures exactly one row exists
+  // Deletes any old rows with random IDs, ensures exactly one row exists.
+  // The `update` branch is empty on purpose: an admin may have edited the
+  // thresholds or the welcome-discount terms, and a re-seed must not undo
+  // that.
   await prisma.siteConfig.deleteMany({
     where: { id: { not: 'singleton' } },
   })
 
   await prisma.siteConfig.upsert({
     where: { id: 'singleton' },
-    update: {
-      vipOrderThreshold: 3,
-      vipSpendThreshold: 200000,
-      welcomeDiscountPercent: 10,
-      welcomeDiscountMinOrder: 20000,
-      welcomeDiscountExpiry: 30,
-    },
+    update: {},
     create: {
       id: 'singleton',
       vipOrderThreshold: 3,

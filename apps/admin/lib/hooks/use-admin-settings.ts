@@ -30,6 +30,17 @@ export interface ShippingZoneInput {
   active?: boolean
 }
 
+/**
+ * The POST /shipping-zones body. `active` is optional — the API defaults
+ * it to `true` when it is left out, so a zone created without it is
+ * published to customers straight away.
+ */
+export interface CreateShippingZoneInput {
+  name: string
+  rate: number
+  active?: boolean
+}
+
 // Fetchers
 
 const fetchSiteConfig = async (): Promise<SiteConfig> => {
@@ -58,10 +69,9 @@ const updateShippingZone = async ({
   return res.data
 }
 
-const createShippingZone = async (input: {
-  name: string
-  rate: number
-}): Promise<ShippingZone> => {
+const createShippingZone = async (
+  input: CreateShippingZoneInput
+): Promise<ShippingZone> => {
   const res = await api.post<ShippingZone>('/shipping-zones', input)
   return res.data
 }
@@ -109,7 +119,7 @@ export const useUpdateShippingZone = () => {
 export const useCreateShippingZone = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: createShippingZone,
+    mutationFn: (input: CreateShippingZoneInput) => createShippingZone(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'shipping-zones'] })
     },

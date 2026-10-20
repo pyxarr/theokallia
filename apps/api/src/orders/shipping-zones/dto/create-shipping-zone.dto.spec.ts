@@ -74,4 +74,55 @@ describe('CreateShippingZoneDto', () => {
     expect(errors).toEqual([])
     expect(dto.active).toBeUndefined()
   })
+
+  it('rejects a blank rate instead of storing it as 0', async () => {
+    const dto = toInstance({ name: 'Lagos', rate: '' })
+
+    const errors = await validate(dto)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].property).toBe('rate')
+    expect(errors[0].constraints).toHaveProperty('isNumber')
+  })
+
+  it('parses the string "false" into the boolean false', async () => {
+    const dto = toInstance({ name: 'Lagos', rate: 3000, active: 'false' })
+
+    const errors = await validate(dto)
+
+    // The strict parse turns "false" into the boolean `false` — the
+    // implicit conversion would have turned it into `true` and published
+    // the zone to customers.
+    expect(errors).toEqual([])
+    expect(dto.active).toBe(false)
+  })
+
+  it('accepts a numeric string rate and holds it as a number', async () => {
+    const dto = toInstance({ name: 'Lagos', rate: '3000' })
+
+    const errors = await validate(dto)
+
+    expect(errors).toEqual([])
+    expect(dto.rate).toBe(3000)
+  })
+
+  it('rejects a boolean sent to the numeric rate', async () => {
+    const dto = toInstance({ name: 'Lagos', rate: true })
+
+    const errors = await validate(dto)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].property).toBe('rate')
+    expect(errors[0].constraints).toHaveProperty('isNumber')
+  })
+
+  it('rejects an explicit null for the active flag', async () => {
+    const dto = toInstance({ name: 'Lagos', rate: 3000, active: null })
+
+    const errors = await validate(dto)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].property).toBe('active')
+    expect(errors[0].constraints).toHaveProperty('isBoolean')
+  })
 })

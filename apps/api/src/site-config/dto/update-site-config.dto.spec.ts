@@ -86,4 +86,47 @@ describe('UpdateSiteConfigDto', () => {
       'welcomeDiscountPercent',
     ])
   })
+
+  it('rejects a blank string instead of storing it as 0', async () => {
+    const dto = toInstance({ vipOrderThreshold: '' })
+
+    const errors = await validate(dto)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].property).toBe('vipOrderThreshold')
+    expect(errors[0].constraints).toHaveProperty('isInt')
+  })
+
+  it('parses the string "false" as a boolean, not as a number', async () => {
+    const dto = toInstance({ vipOrderThreshold: 'false' })
+
+    const errors = await validate(dto)
+
+    // The strict parse turns "false" into the boolean `false`, so the
+    // numeric validators reject it — the implicit conversion would have
+    // turned it into a truthy 1 and promoted every customer to VIP.
+    expect(dto.vipOrderThreshold).toBe(false)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].property).toBe('vipOrderThreshold')
+    expect(errors[0].constraints).toHaveProperty('isInt')
+  })
+
+  it('accepts a numeric string and holds it as a number', async () => {
+    const dto = toInstance({ vipOrderThreshold: '3000' })
+
+    const errors = await validate(dto)
+
+    expect(errors).toEqual([])
+    expect(dto.vipOrderThreshold).toBe(3000)
+  })
+
+  it('rejects a boolean sent to a numeric field', async () => {
+    const dto = toInstance({ vipOrderThreshold: true })
+
+    const errors = await validate(dto)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].property).toBe('vipOrderThreshold')
+    expect(errors[0].constraints).toHaveProperty('isInt')
+  })
 })

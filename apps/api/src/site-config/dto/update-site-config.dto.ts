@@ -7,6 +7,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator'
+import { StrictValue } from '../../utils/strict-value'
 
 /**
  * DTO for patching the singleton site settings row.
@@ -18,12 +19,17 @@ import {
  * `null` would otherwise reach Prisma and fail there as an unhandled
  * error instead of a 400. `@ValidateIf` skips the validators only for
  * `undefined`; `@IsDefined()` rejects an explicit `null` with a 400.
+ *
+ * `@StrictValue()` parses the raw body value itself, so the global
+ * ValidationPipe's implicit conversion cannot turn a cleared form field
+ * (`""`) into `0` — see `utils/strict-value.ts`.
  */
 export class UpdateSiteConfigDto {
   /** Number of completed orders that promotes a customer to VIP. */
   @ApiPropertyOptional({ example: 3 })
   @ValidateIf((_object, value) => value !== undefined)
   @IsDefined()
+  @StrictValue()
   @IsInt()
   @Min(0)
   vipOrderThreshold?: number
@@ -32,6 +38,7 @@ export class UpdateSiteConfigDto {
   @ApiPropertyOptional({ example: 200000 })
   @ValidateIf((_object, value) => value !== undefined)
   @IsDefined()
+  @StrictValue()
   @IsNumber()
   @Min(0)
   vipSpendThreshold?: number
@@ -40,6 +47,7 @@ export class UpdateSiteConfigDto {
   @ApiPropertyOptional({ example: 10 })
   @ValidateIf((_object, value) => value !== undefined)
   @IsDefined()
+  @StrictValue()
   @IsInt()
   @Min(0)
   @Max(100)
@@ -49,6 +57,7 @@ export class UpdateSiteConfigDto {
   @ApiPropertyOptional({ example: 20000 })
   @ValidateIf((_object, value) => value !== undefined)
   @IsDefined()
+  @StrictValue()
   @IsNumber()
   @Min(0)
   welcomeDiscountMinOrder?: number
@@ -57,6 +66,7 @@ export class UpdateSiteConfigDto {
   @ApiPropertyOptional({ example: 30 })
   @ValidateIf((_object, value) => value !== undefined)
   @IsDefined()
+  @StrictValue()
   @IsInt()
   @Min(1)
   welcomeDiscountExpiry?: number
