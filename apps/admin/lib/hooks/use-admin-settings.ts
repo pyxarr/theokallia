@@ -2,17 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { SiteConfig, ShippingZone } from '@theokallia/types'
 
-/** The singleton settings row, exactly as the API returns it. */
-export interface SiteConfig {
-  id: string
-  vipOrderThreshold: number
-  vipSpendThreshold: number
-  welcomeDiscountPercent: number
-  welcomeDiscountMinOrder: number
-  welcomeDiscountExpiry: number
-  updatedAt: string
-}
+export type { SiteConfig, ShippingZone } from '@theokallia/types'
 
 /**
  * The only fields the PATCH /site-config body accepts.
@@ -26,14 +18,6 @@ export interface SiteConfigInput {
   welcomeDiscountPercent?: number
   welcomeDiscountMinOrder?: number
   welcomeDiscountExpiry?: number
-}
-
-/** A shipping zone row as the admin list returns it. */
-export interface ShippingZone {
-  id: string
-  name: string
-  rate: number
-  active: boolean
 }
 
 /**
