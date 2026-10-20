@@ -72,8 +72,18 @@ function toFormValues(config: SiteConfig): SiteConfigFormValues {
 }
 
 export default function SettingsPage() {
-  const { data: config, isPending: isConfigPending } = useSiteConfig()
-  const { data: zones, isPending: isZonesPending } = useShippingZones()
+  const {
+    data: config,
+    isPending: isConfigPending,
+    isError: isConfigError,
+    error: configError,
+  } = useSiteConfig()
+  const {
+    data: zones,
+    isPending: isZonesPending,
+    isError: isZonesError,
+    error: zonesError,
+  } = useShippingZones()
   const { mutateAsync: updateConfig, isPending: isSaving } =
     useUpdateSiteConfig()
   const { mutateAsync: updateZone, isPending: isUpdatingZone } =
@@ -104,8 +114,21 @@ export default function SettingsPage() {
     setIsFormSeeded(true)
   }, [config])
 
-  const isConfigLoading = isConfigPending || !isFormSeeded
   const zoneList = zones ?? []
+
+  // A failed query never produces data, so the form can never be seeded.
+  // That is an error, not a loading state: without this the page would sit
+  // on skeletons forever with a dead Save button.
+  const configErrorMessage =
+    isConfigError && !config
+      ? errorMessage(configError, 'Could not load settings')
+      : null
+  const isConfigLoading =
+    isConfigPending || (!isFormSeeded && configErrorMessage === null)
+  const zonesErrorMessage =
+    isZonesError && zoneList.length === 0
+      ? errorMessage(zonesError, 'Could not load shipping zones')
+      : null
 
   const handleSave = async () => {
     const payload: SiteConfigInput = {}
@@ -210,7 +233,7 @@ export default function SettingsPage() {
         </div>
         <Button
           onClick={() => void handleSave()}
-          disabled={isSaving || isConfigLoading}
+          disabled={isSaving || isConfigLoading || configErrorMessage !== null}
         >
           {isSaving ? 'Saving…' : 'Save changes'}
         </Button>
@@ -229,6 +252,10 @@ export default function SettingsPage() {
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </>
+          ) : configErrorMessage ? (
+            <p role="alert" className="text-sm text-destructive sm:col-span-2">
+              {configErrorMessage}
+            </p>
           ) : (
             <>
               <div className="flex flex-col gap-2">
@@ -286,6 +313,10 @@ export default function SettingsPage() {
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </>
+          ) : configErrorMessage ? (
+            <p role="alert" className="text-sm text-destructive sm:col-span-2">
+              {configErrorMessage}
+            </p>
           ) : (
             <>
               <div className="flex flex-col gap-2">
@@ -381,7 +412,18 @@ export default function SettingsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {!isZonesPending && zoneList.length === 0 && (
+              {!isZonesPending && zonesErrorMessage && (
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    role="alert"
+                    className="text-center text-destructive"
+                  >
+                    {zonesErrorMessage}
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isZonesPending && !zonesErrorMessage && zoneList.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={3}
@@ -419,6 +461,7 @@ export default function SettingsPage() {
                         <Button
                           size="sm"
                           variant="outline"
+                          aria-label={`Save rate for ${zone.name}`}
                           disabled={!hasRateChanged || isUpdatingZone}
                           onClick={() => void saveZoneRate(zone)}
                         >

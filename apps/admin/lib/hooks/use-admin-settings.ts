@@ -41,6 +41,9 @@ export interface CreateShippingZoneInput {
   active?: boolean
 }
 
+/** The cache key the shipping-zone list lives under. */
+const SHIPPING_ZONES_QUERY_KEY = ['admin', 'shipping-zones'] as const
+
 // Fetchers
 
 const fetchSiteConfig = async (): Promise<SiteConfig> => {
@@ -90,7 +93,7 @@ export const useSiteConfig = () => {
 /** Every shipping zone, active and inactive. */
 export const useShippingZones = () => {
   return useQuery({
-    queryKey: ['admin', 'shipping-zones'],
+    queryKey: SHIPPING_ZONES_QUERY_KEY,
     queryFn: fetchShippingZones,
     staleTime: 1000 * 30,
   })
@@ -110,8 +113,36 @@ export const useUpdateShippingZone = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateShippingZone,
+    // The `active` toggle has to feel instant, so the new value goes into
+    // the cache before the request goes out. A failed save puts the
+    // previous value back, and the refetch lets the server's value win.
+    onMutate: async ({ id, input }) => {
+      const active = input.active
+      await queryClient.cancelQueries({ queryKey: SHIPPING_ZONES_QUERY_KEY })
+      const previous = queryClient.getQueryData<ShippingZone[]>(
+        SHIPPING_ZONES_QUERY_KEY
+      )
+      queryClient.setQueryData<ShippingZone[]>(
+        SHIPPING_ZONES_QUERY_KEY,
+        (zones) =>
+          zones?.map((zone) =>
+            zone.id === id && active !== undefined
+              ? { ...zone, active }
+              : zone
+          )
+      )
+      return { previous }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(SHIPPING_ZONES_QUERY_KEY, context.previous)
+      }
+    },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'shipping-zones'] })
+      void queryClient.invalidateQueries({ queryKey: SHIPPING_ZONES_QUERY_KEY })
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: SHIPPING_ZONES_QUERY_KEY })
     },
   })
 }
@@ -121,7 +152,7 @@ export const useCreateShippingZone = () => {
   return useMutation({
     mutationFn: createShippingZone,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'shipping-zones'] })
+      void queryClient.invalidateQueries({ queryKey: SHIPPING_ZONES_QUERY_KEY })
     },
   })
 }
