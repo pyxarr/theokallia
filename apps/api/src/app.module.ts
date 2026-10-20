@@ -22,6 +22,7 @@ import { ContentModule } from './content/content.module'
 import { SubscribersModule } from './subscribers/subscribers.module'
 import { CurrencyModule } from './currency/currency.module'
 import { CouponsModule } from './coupons/coupons.module'
+import { SiteConfigModule } from './site-config/site-config.module'
 import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
 import { auth } from './auth/auth'
 import * as Joi from 'joi'
@@ -77,6 +78,7 @@ import * as Joi from 'joi'
     WishlistModule,
     OrdersModule,
     CouponsModule,
+    SiteConfigModule,
     PaymentsModule,
     RateLimitModule,
     UploadModule,
