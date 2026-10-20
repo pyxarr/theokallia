@@ -44,6 +44,9 @@ export interface CreateShippingZoneInput {
 /** The cache key the shipping-zone list lives under. */
 const SHIPPING_ZONES_QUERY_KEY = ['admin', 'shipping-zones'] as const
 
+/** The cache key the global settings row lives under. */
+const SITE_CONFIG_QUERY_KEY = ['admin', 'site-config'] as const
+
 // Fetchers
 
 const fetchSiteConfig = async (): Promise<SiteConfig> => {
@@ -84,7 +87,7 @@ const createShippingZone = async (
 /** The global store settings — VIP thresholds and welcome-discount terms. */
 export const useSiteConfig = () => {
   return useQuery({
-    queryKey: ['admin', 'site-config'],
+    queryKey: SITE_CONFIG_QUERY_KEY,
     queryFn: fetchSiteConfig,
     staleTime: 1000 * 30,
   })
@@ -104,7 +107,7 @@ export const useUpdateSiteConfig = () => {
   return useMutation({
     mutationFn: updateSiteConfig,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'site-config'] })
+      void queryClient.invalidateQueries({ queryKey: SITE_CONFIG_QUERY_KEY })
     },
   })
 }
@@ -137,9 +140,6 @@ export const useUpdateShippingZone = () => {
       if (context?.previous) {
         queryClient.setQueryData(SHIPPING_ZONES_QUERY_KEY, context.previous)
       }
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: SHIPPING_ZONES_QUERY_KEY })
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: SHIPPING_ZONES_QUERY_KEY })
