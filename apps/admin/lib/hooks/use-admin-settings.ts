@@ -119,7 +119,7 @@ export const useUpdateShippingZone = () => {
 export const useCreateShippingZone = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: CreateShippingZoneInput) => createShippingZone(input),
+    mutationFn: createShippingZone,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'shipping-zones'] })
     },
