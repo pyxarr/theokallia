@@ -25,11 +25,17 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await authClient.signIn.email({ email, password })
+      const { error } = await authClient.signIn.email({ email, password })
+
+      if (error) {
+        toast.error(error.message ?? 'Invalid credentials')
+        return
+      }
+
       toast.success('Signed in')
       router.push('/dashboard')
     } catch {
-      toast.error('Invalid credentials')
+      toast.error('Could not reach the server')
     } finally {
       setIsLoading(false)
     }

@@ -64,7 +64,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'Marketing',
     items: [
-      { title: 'Content', href: '/content', icon: Megaphone },
+      { title: 'Content', href: '/studio', icon: Megaphone },
       { title: 'Coupons', href: '/coupons', icon: Ticket },
     ],
   },
