@@ -57,6 +57,9 @@ describe('SiteConfigService', () => {
 
     expect(result).toEqual(created)
     expect(siteConfigDelegate.create).toHaveBeenCalledTimes(1)
+    expect(siteConfigDelegate.create).toHaveBeenCalledWith({
+      data: { id: 'singleton' },
+    })
   })
 
   it('applies only the provided fields on update', async () => {
