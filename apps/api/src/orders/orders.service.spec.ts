@@ -45,7 +45,9 @@ describe('OrdersService — VIP evaluation', () => {
   beforeEach(() => {
     jest.resetAllMocks()
 
-    prisma.client.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx))
+    prisma.client.$transaction.mockImplementation(
+      (cb: (t: typeof tx) => unknown) => cb(tx),
+    )
 
     service = new OrdersService(
       prisma as unknown as PrismaService,
@@ -138,6 +140,8 @@ describe('OrdersService — VIP evaluation', () => {
 
     await service.evaluateVip('usr_1')
 
+    // FIXME: plan §7.2 Side Effect B appends 'vip' "if not already included" —
+    // the service pushes unconditionally, with no de-dup check (Task 6).
     expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: { userId: 'usr_1', tags: { push: 'vip' } },

@@ -13,6 +13,7 @@ describe('SubscribersService', () => {
   const userDelegate = { findUnique: jest.fn() }
   const subscriberDelegate = {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
     upsert: jest.fn(),
@@ -33,107 +34,128 @@ describe('SubscribersService', () => {
     )
   })
 
+  // The four cases in this block are `it.failing` on purpose. `subscribe`
+  // writes `tags: { set: [...] }`, which REPLACES the whole tag array, so a
+  // re-subscribe drops every tag the subscriber already carried (e.g. 'vip').
+  // Plan §10.1.1/§10.1.2 amend the tags instead: keep the existing ones and
+  // ensure 'registered' is among them. Task 6 ("Subscriber tags survive a
+  // re-subscribe") fixes the service — flip these back to `it` once it lands.
   describe('subscribe', () => {
-    it('creates a guest subscriber for an unknown email (trimming + lowercasing)', async () => {
-      userDelegate.findUnique.mockResolvedValue(null)
-      subscriberDelegate.upsert.mockResolvedValue({
-        id: 'sub_1',
-        email: 'ada@example.com',
-        tags: ['guest'],
-        active: true,
-      })
-
-      await service.subscribe({ email: '  Ada@Example.COM ' })
-
-      expect(subscriberDelegate.upsert).toHaveBeenCalledWith({
-        where: { email: 'ada@example.com' },
-        create: {
+    it.failing(
+      'creates a guest subscriber for an unknown email (trimming + lowercasing)',
+      async () => {
+        userDelegate.findUnique.mockResolvedValue(null)
+        subscriberDelegate.upsert.mockResolvedValue({
+          id: 'sub_1',
           email: 'ada@example.com',
-          userId: null,
           tags: ['guest'],
           active: true,
-        },
-        update: {
-          userId: null,
-          tags: { set: ['guest'] },
-          active: true,
-        },
-      })
-      expect(queue.add).toHaveBeenCalledWith('sync-resend-contact', {
-        email: 'ada@example.com',
-      })
-    })
+        })
 
-    it('creates a registered subscriber when an account already exists', async () => {
-      userDelegate.findUnique.mockResolvedValue({
-        id: 'usr_1',
-        email: 'ada@example.com',
-      })
-      subscriberDelegate.upsert.mockResolvedValue({
-        id: 'sub_1',
-        email: 'ada@example.com',
-        tags: ['registered'],
-        active: true,
-      })
+        await service.subscribe({ email: '  Ada@Example.COM ' })
 
-      await service.subscribe({ email: 'ada@example.com' })
-
-      expect(subscriberDelegate.upsert).toHaveBeenCalledWith({
-        where: { email: 'ada@example.com' },
-        create: {
+        expect(subscriberDelegate.upsert).toHaveBeenCalledWith({
+          where: { email: 'ada@example.com' },
+          create: {
+            email: 'ada@example.com',
+            userId: null,
+            tags: ['guest'],
+            active: true,
+          },
+          // Plan §10.1.1: an existing subscriber keeps its tags, only
+          // `active` is ensured.
+          update: {
+            userId: null,
+            active: true,
+          },
+        })
+        expect(queue.add).toHaveBeenCalledWith('sync-resend-contact', {
           email: 'ada@example.com',
-          userId: 'usr_1',
+        })
+      },
+    )
+
+    it.failing(
+      'creates a registered subscriber when an account already exists',
+      async () => {
+        userDelegate.findUnique.mockResolvedValue({
+          id: 'usr_1',
+          email: 'ada@example.com',
+        })
+        subscriberDelegate.upsert.mockResolvedValue({
+          id: 'sub_1',
+          email: 'ada@example.com',
           tags: ['registered'],
           active: true,
-        },
-        update: {
-          userId: 'usr_1',
-          tags: { set: ['registered'] },
-          active: true,
-        },
-      })
-    })
+        })
 
-    it('promotes and reactivates an existing guest once an account exists', async () => {
-      userDelegate.findUnique.mockResolvedValue({
-        id: 'usr_1',
-        email: 'ada@example.com',
-      })
+        await service.subscribe({ email: 'ada@example.com' })
 
-      await service.subscribe({ email: 'ada@example.com' })
-
-      expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          update: {
+        expect(subscriberDelegate.upsert).toHaveBeenCalledWith({
+          where: { email: 'ada@example.com' },
+          create: {
+            email: 'ada@example.com',
             userId: 'usr_1',
-            tags: { set: ['registered'] },
+            tags: ['registered'],
             active: true,
           },
-        }),
-      )
-      expect(queue.add).toHaveBeenCalled()
-    })
-
-    it('re-affirms an already registered, active subscriber in a single upsert', async () => {
-      userDelegate.findUnique.mockResolvedValue({
-        id: 'usr_1',
-        email: 'ada@example.com',
-      })
-
-      await service.subscribe({ email: 'ada@example.com' })
-
-      expect(subscriberDelegate.update).not.toHaveBeenCalled()
-      expect(subscriberDelegate.upsert).toHaveBeenCalledTimes(1)
-      expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+          // Plan §10.1.2: keep the existing tags, ensure 'registered' is one
+          // of them.
           update: {
             userId: 'usr_1',
-            tags: { set: ['registered'] },
+            tags: { push: 'registered' },
             active: true,
           },
-        }),
-      )
-    })
+        })
+      },
+    )
+
+    it.failing(
+      'promotes and reactivates an existing guest once an account exists',
+      async () => {
+        userDelegate.findUnique.mockResolvedValue({
+          id: 'usr_1',
+          email: 'ada@example.com',
+        })
+
+        await service.subscribe({ email: 'ada@example.com' })
+
+        expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            update: {
+              userId: 'usr_1',
+              tags: { push: 'registered' },
+              active: true,
+            },
+          }),
+        )
+        expect(queue.add).toHaveBeenCalled()
+      },
+    )
+
+    it.failing(
+      're-affirms an already registered, active subscriber in a single upsert',
+      async () => {
+        userDelegate.findUnique.mockResolvedValue({
+          id: 'usr_1',
+          email: 'ada@example.com',
+        })
+
+        await service.subscribe({ email: 'ada@example.com' })
+
+        expect(subscriberDelegate.update).not.toHaveBeenCalled()
+        expect(subscriberDelegate.upsert).toHaveBeenCalledTimes(1)
+        expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            update: {
+              userId: 'usr_1',
+              tags: { push: 'registered' },
+              active: true,
+            },
+          }),
+        )
+      },
+    )
   })
 
   describe('tagRegistered', () => {
@@ -148,10 +170,13 @@ describe('SubscribersService', () => {
           },
         }),
       )
-      expect(subscriberDelegate.updateMany).toHaveBeenCalledWith({
-        where: { email: 'ada@example.com', tags: { has: 'guest' } },
-        data: { tags: { set: ['registered'] } },
-      })
+      // Only guests are promoted. The tags written are pinned by the failing
+      // case below — they must keep every tag except 'guest'.
+      expect(subscriberDelegate.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { email: 'ada@example.com', tags: { has: 'guest' } },
+        }),
+      )
       expect(queue.add).toHaveBeenCalledWith('sync-resend-contact', {
         email: 'ada@example.com',
       })
@@ -172,16 +197,39 @@ describe('SubscribersService', () => {
       )
     })
 
-    it('replaces the guest tag with registered when promoting a guest', async () => {
-      await service.tagRegistered('usr_1', 'ada@example.com')
+    // DEFECT (Task 6): promoting a guest replaces the whole tag array, so
+    // every other tag the subscriber carried (e.g. 'vip') is dropped along
+    // with 'guest'. Plan §10.1.3 swaps the 'guest' tag for 'registered' and
+    // keeps the rest. Task 6 ("Subscriber tags survive a re-subscribe") fixes
+    // the service — flip this back to `it` once it lands.
+    it.failing(
+      'replaces the guest tag with registered and keeps every other tag when promoting a guest',
+      async () => {
+        const guest = {
+          id: 'sub_1',
+          email: 'ada@example.com',
+          tags: ['guest', 'vip'],
+          active: true,
+        }
+        // The service has to read the current tags to amend them.
+        subscriberDelegate.findUnique.mockResolvedValue(guest)
+        subscriberDelegate.findFirst.mockResolvedValue(guest)
+        subscriberDelegate.findMany.mockResolvedValue([guest])
 
-      // The service rewrites the whole tag set, so any other tag the guest
-      // already carried (e.g. 'vip') is dropped along with 'guest'.
-      expect(subscriberDelegate.updateMany).toHaveBeenCalledWith({
-        where: { email: 'ada@example.com', tags: { has: 'guest' } },
-        data: { tags: { set: ['registered'] } },
-      })
-    })
+        await service.tagRegistered('usr_1', 'ada@example.com')
+
+        expect(subscriberDelegate.updateMany).toHaveBeenCalledWith({
+          where: { email: 'ada@example.com', tags: { has: 'guest' } },
+          data: {
+            tags: { set: expect.arrayContaining(['registered', 'vip']) },
+          },
+        })
+        expect(subscriberDelegate.updateMany).toHaveBeenCalledWith({
+          where: { email: 'ada@example.com', tags: { has: 'guest' } },
+          data: { tags: { set: expect.not.arrayContaining(['guest']) } },
+        })
+      },
+    )
   })
 
   describe('findAll', () => {
