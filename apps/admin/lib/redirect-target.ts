@@ -10,8 +10,9 @@
  * Resolving with the same parser the browser uses catches every case at
  * once.
  *
- * Only the path is returned, so whatever the input, the value handed to the
- * router is a same-origin path.
+ * Only the path is returned, and it is resolved a second time before it is
+ * handed back, so whatever the input, the value the router receives is a
+ * same-origin path.
  */
 export function safeRedirectTarget(
   value: string | null | undefined,
@@ -19,21 +20,34 @@ export function safeRedirectTarget(
 ): string {
   if (!value) return fallback
 
+  // Only a path is meaningful here. A relative value would resolve against
+  // whatever page the admin happens to be on.
+  if (!value.startsWith('/')) return fallback
+
   const base = new URL('http://internal.invalid')
 
-  let resolved: URL
   try {
-    resolved = new URL(value, base)
+    const resolved = new URL(value, base)
+
+    // A different origin: an absolute URL, a protocol-relative path, or a
+    // value the parser rewrote into one.
+    if (resolved.origin !== base.origin) return fallback
+
+    // Sending someone back to the login page itself is a redirect loop.
+    if (resolved.pathname === '/login' || resolved.pathname === '/login/') {
+      return fallback
+    }
+
+    const target = resolved.pathname + resolved.search + resolved.hash
+
+    // The resolved path can itself be protocol-relative — the parser puts
+    // the path after an explicit host, so "//host//evil" yields the path
+    // "//evil", which the browser reads as off-origin. Resolve the value
+    // being returned the same way the browser will, and check it again.
+    if (new URL(target, base).origin !== base.origin) return fallback
+
+    return target
   } catch {
     return fallback
   }
-
-  if (resolved.origin !== base.origin) return fallback
-
-  // Sending someone back to the login page itself is a redirect loop.
-  if (resolved.pathname === '/login' || resolved.pathname === '/login/') {
-    return fallback
-  }
-
-  return resolved.pathname + resolved.search + resolved.hash
 }
