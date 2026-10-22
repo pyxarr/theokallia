@@ -18,10 +18,17 @@ describe('OrdersService — VIP evaluation', () => {
   }
   const orderDelegate = { aggregate: jest.fn() }
   const userDelegate = { findUnique: jest.fn(), update: jest.fn() }
-  const subscriberDelegate = { upsert: jest.fn() }
+  const subscriberDelegate = { findUnique: jest.fn(), upsert: jest.fn() }
   const ordersQueue = { add: jest.fn() }
   const mailQueue = { add: jest.fn() }
   const siteConfigService = { get: jest.fn() }
+
+  type SubscriberRecord = {
+    email: string
+    tags: string[]
+    active: boolean
+    userId?: string | null
+  }
 
   const prisma = {
     client: {
@@ -63,6 +70,55 @@ describe('OrdersService — VIP evaluation', () => {
     })
   })
 
+  /**
+   * In-memory Subscriber double. It applies Prisma's `set`/`push` tag writes to
+   * the record, so a test asserts the tags a subscriber ends up with instead
+   * of the shape of the write.
+   */
+  function fakeSubscriber(existing: SubscriberRecord | null) {
+    const state: { record: SubscriberRecord | null } = { record: existing }
+
+    subscriberDelegate.findUnique.mockImplementation(
+      async ({ where }: { where: { email: string } }) =>
+        state.record?.email === where.email ? state.record : null,
+    )
+
+    subscriberDelegate.upsert.mockImplementation(
+      async ({
+        create,
+        update,
+      }: {
+        create: SubscriberRecord
+        update: {
+          userId?: string | null
+          tags?: { set?: string | string[]; push?: string | string[] }
+        }
+      }) => {
+        if (!state.record) {
+          state.record = { ...create }
+          return state.record
+        }
+
+        const record = state.record
+        if (update.tags?.set !== undefined) {
+          record.tags = Array.isArray(update.tags.set)
+            ? [...update.tags.set]
+            : [update.tags.set]
+        } else if (update.tags?.push !== undefined) {
+          const pushed = Array.isArray(update.tags.push)
+            ? update.tags.push
+            : [update.tags.push]
+          record.tags = [...record.tags, ...pushed]
+        }
+        if (update.userId !== undefined) record.userId = update.userId
+
+        return record
+      },
+    )
+
+    return state
+  }
+
   it('enqueues the VIP evaluation when an order is paid', async () => {
     tx.order.findUnique.mockResolvedValue({
       id: 'ord_1',
@@ -88,6 +144,7 @@ describe('OrdersService — VIP evaluation', () => {
       _count: { _all: 3 },
       _sum: { total: 30000 },
     })
+    const subscriber = fakeSubscriber(null)
 
     await service.evaluateVip('usr_1')
 
@@ -104,15 +161,11 @@ describe('OrdersService — VIP evaluation', () => {
         totalSpend: 30000,
       }),
     )
-    expect(subscriberDelegate.upsert).toHaveBeenCalledWith({
-      where: { email: 'ada@example.com' },
-      create: {
-        email: 'ada@example.com',
-        userId: 'usr_1',
-        tags: ['registered', 'vip'],
-        active: true,
-      },
-      update: { userId: 'usr_1', tags: { push: 'vip' } },
+    expect(subscriber.record).toEqual({
+      email: 'ada@example.com',
+      userId: 'usr_1',
+      tags: ['registered', 'vip'],
+      active: true,
     })
   })
 
@@ -138,16 +191,39 @@ describe('OrdersService — VIP evaluation', () => {
       _count: { _all: 1 },
       _sum: { total: 250000 },
     })
+    const subscriber = fakeSubscriber({
+      email: 'ada@example.com',
+      tags: ['registered', 'guest'],
+      active: true,
+    })
 
     await service.evaluateVip('usr_1')
 
-    // FIXME: plan §7.2 Side Effect B appends 'vip' "if not already included" —
-    // the service pushes unconditionally, with no de-dup check (Task 6).
-    expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: { userId: 'usr_1', tags: { push: 'vip' } },
-      }),
-    )
+    expect([...(subscriber.record?.tags ?? [])].sort()).toEqual([
+      'guest',
+      'registered',
+      'vip',
+    ])
+  })
+
+  it('does not add a second vip tag to a subscriber who already has one', async () => {
+    userDelegate.findUnique.mockResolvedValue(baseUser)
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 1 },
+      _sum: { total: 250000 },
+    })
+    const subscriber = fakeSubscriber({
+      email: 'ada@example.com',
+      tags: ['registered', 'vip'],
+      active: true,
+    })
+
+    await service.evaluateVip('usr_1')
+
+    expect([...(subscriber.record?.tags ?? [])].sort()).toEqual([
+      'registered',
+      'vip',
+    ])
   })
 
   it('does nothing when the customer is already VIP', async () => {

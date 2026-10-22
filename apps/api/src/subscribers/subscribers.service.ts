@@ -23,20 +23,29 @@ export class SubscribersService {
 
     const user = await this.prisma.client.user.findUnique({ where: { email } })
 
+    // §10.1.2 — an authenticated submit keeps the tags the subscriber already
+    // carries and makes sure 'registered' is one of them.
+    const existing = user
+      ? await this.prisma.client.subscriber.findUnique({ where: { email } })
+      : null
+    const tags = user
+      ? this.ensureTag(existing?.tags ?? [], 'registered')
+      : ['guest']
+
     await this.prisma.client.subscriber.upsert({
       where: { email },
       create: {
         email,
         userId: user?.id ?? null,
-        tags: [user ? 'registered' : 'guest'],
+        tags,
         active: true,
       },
       update: {
         userId: user?.id ?? null,
-        tags: {
-          set: user ? ['registered'] : ['guest'],
-        },
         active: true,
+        // §10.1.1 — a guest submit only ensures active, so the tags stay as
+        // they are. undefined leaves the field untouched.
+        tags: user ? { set: tags } : undefined,
       },
     })
 
@@ -50,21 +59,20 @@ export class SubscribersService {
   async tagRegistered(userId: string, email: string) {
     const normalized = email.trim().toLowerCase()
 
-    await this.prisma.client.subscriber.upsert({
+    const existing = await this.prisma.client.subscriber.findUnique({
       where: { email: normalized },
-      create: { email: normalized, userId, tags: ['registered'], active: true },
-      update: {
-        userId,
-        tags: {
-          push: 'registered',
-        },
-      },
     })
 
-    // Remove 'guest' tag if present (upsert with push doesn't handle removal)
-    await this.prisma.client.subscriber.updateMany({
-      where: { email: normalized, tags: { has: 'guest' } },
-      data: { tags: { set: ['registered'] } },
+    // §10.1.3 — a guest is promoted to "registered"; every other tag stays.
+    const tags = this.ensureTag(
+      (existing?.tags ?? []).filter((tag) => tag !== 'guest'),
+      'registered',
+    )
+
+    await this.prisma.client.subscriber.upsert({
+      where: { email: normalized },
+      create: { email: normalized, userId, tags, active: true },
+      update: { userId, tags: { set: tags } },
     })
 
     await this.enqueueSync(normalized)
@@ -185,6 +193,11 @@ export class SubscribersService {
   /** Queues a Resend audience sync for a subscriber email. */
   private async enqueueSync(email: string) {
     await this.subscribersQueue.add('sync-resend-contact', { email })
+  }
+
+  /** Returns the tags with `tag` included, without duplicating it. */
+  private ensureTag(tags: string[], tag: string): string[] {
+    return tags.includes(tag) ? tags : [...tags, tag]
   }
 
   /** Order-insensitive comparison of two tag arrays. */

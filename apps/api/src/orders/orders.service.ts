@@ -402,13 +402,20 @@ export class OrdersService {
    * if the customer has never subscribed. Existing tags are preserved.
    */
   private async tagVipSubscriber(email: string, userId: string) {
+    const existing = await this.prisma.client.subscriber.findUnique({
+      where: { email },
+    })
+
+    // §7.2 Side Effect B — append "vip" unless it is already there.
+    const tags = existing?.tags ?? []
+
     await this.prisma.client.subscriber.upsert({
       where: { email },
       create: { email, userId, tags: ['registered', 'vip'], active: true },
       update: {
         userId,
         tags: {
-          push: 'vip',
+          set: tags.includes('vip') ? tags : [...tags, 'vip'],
         },
       },
     })
