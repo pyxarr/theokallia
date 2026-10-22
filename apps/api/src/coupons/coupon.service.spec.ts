@@ -1,4 +1,6 @@
+import 'reflect-metadata'
 import { ConflictException, NotFoundException } from '@nestjs/common'
+import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { CouponsService } from './coupons.service'
 import { PrismaService } from '../prisma/prisma.service'
@@ -28,8 +30,14 @@ describe('CouponsService', () => {
   })
 
   describe('CreateCouponDto validation', () => {
+    // The global ValidationPipe in main.ts runs with `transform: true` and
+    // `enableImplicitConversion: true`, so the body is converted exactly
+    // like in production before it is validated.
+    const toInstance = (payload: Record<string, unknown>) =>
+      plainToInstance(CreateCouponDto, payload, { enableImplicitConversion: true })
+
     it('accepts a valid percent coupon payload', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
+      const dto = toInstance({
         code: 'welcome10',
         type: 'percent',
         value: 10,
@@ -46,18 +54,14 @@ describe('CouponsService', () => {
     })
 
     it('rejects an invalid coupon type', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
-        code: 'BOGUS',
-        type: 'half_price',
-        value: 10,
-      })
+      const dto = toInstance({ code: 'BOGUS', type: 'half_price', value: 10 })
 
       const errors = await validate(dto)
       expect(errors.some((error) => error.property === 'type')).toBe(true)
     })
 
     it('rejects an invalid coupon scope', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
+      const dto = toInstance({
         code: 'BOGUS',
         type: 'percent',
         value: 10,
@@ -69,18 +73,14 @@ describe('CouponsService', () => {
     })
 
     it('rejects a negative discount value', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
-        code: 'BOGUS',
-        type: 'fixed',
-        value: -5,
-      })
+      const dto = toInstance({ code: 'BOGUS', type: 'fixed', value: -5 })
 
       const errors = await validate(dto)
       expect(errors.some((error) => error.property === 'value')).toBe(true)
     })
 
     it('accepts a welcome coupon payload', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
+      const dto = toInstance({
         code: 'welcome10',
         type: 'percent',
         value: 10,
@@ -92,7 +92,7 @@ describe('CouponsService', () => {
     })
 
     it('rejects an unknown coupon source', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
+      const dto = toInstance({
         code: 'BOGUS',
         type: 'percent',
         value: 10,
@@ -104,7 +104,7 @@ describe('CouponsService', () => {
     })
 
     it('rejects a non-boolean autoIssue', async () => {
-      const dto = Object.assign(new CreateCouponDto(), {
+      const dto = toInstance({
         code: 'BOGUS',
         type: 'percent',
         value: 10,
@@ -113,6 +113,21 @@ describe('CouponsService', () => {
 
       const errors = await validate(dto)
       expect(errors.some((error) => error.property === 'autoIssue')).toBe(true)
+    })
+
+    it('parses the string "false" into the boolean false', async () => {
+      const dto = toInstance({
+        code: 'BOGUS',
+        type: 'percent',
+        value: 10,
+        autoIssue: 'false',
+      })
+
+      // The strict parse turns "false" into the boolean `false` — the
+      // implicit conversion would have turned it into `true` and issued
+      // the coupon to every new customer.
+      expect(await validate(dto)).toEqual([])
+      expect(dto.autoIssue).toBe(false)
     })
   })
 
@@ -179,6 +194,12 @@ describe('CouponsService', () => {
   })
 
   describe('update', () => {
+    // The global ValidationPipe in main.ts runs with `transform: true` and
+    // `enableImplicitConversion: true`, so the patch body is converted
+    // exactly like in production before it reaches the service.
+    const toInstance = (payload: Record<string, unknown>) =>
+      plainToInstance(UpdateCouponDto, payload, { enableImplicitConversion: true })
+
     it('uppercases the code on update', async () => {
       couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'OLD' })
       couponDelegate.update.mockResolvedValueOnce({ id: 'c1', code: 'NEW10' })
@@ -219,6 +240,44 @@ describe('CouponsService', () => {
       await service.update('c1', Object.assign(new UpdateCouponDto(), { autoIssue: true }))
 
       expect(couponDelegate.update.mock.calls[0][0].data.autoIssue).toBe(true)
+    })
+
+    it('does not write autoIssue when the patch carries null', async () => {
+      couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+      couponDelegate.update.mockResolvedValueOnce({ id: 'c1' })
+
+      await service.update('c1', toInstance({ autoIssue: null }))
+
+      // `null` counts as absent — the column is NOT NULL, so writing it
+      // would fail at Prisma instead of leaving the flag alone.
+      expect(couponDelegate.update.mock.calls[0][0].data).not.toHaveProperty('autoIssue')
+    })
+
+    it('parses the string "false" into the boolean false', async () => {
+      couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+      couponDelegate.update.mockResolvedValueOnce({ id: 'c1' })
+
+      await service.update('c1', toInstance({ autoIssue: 'false' }))
+
+      expect(couponDelegate.update.mock.calls[0][0].data.autoIssue).toBe(false)
+    })
+
+    it('writes source when the patch carries it', async () => {
+      couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+      couponDelegate.update.mockResolvedValueOnce({ id: 'c1' })
+
+      await service.update('c1', Object.assign(new UpdateCouponDto(), { source: 'welcome' }))
+
+      expect(couponDelegate.update.mock.calls[0][0].data.source).toBe('welcome')
+    })
+
+    it('does not write source when the patch omits it', async () => {
+      couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+      couponDelegate.update.mockResolvedValueOnce({ id: 'c1' })
+
+      await service.update('c1', Object.assign(new UpdateCouponDto(), { value: 15 }))
+
+      expect(couponDelegate.update.mock.calls[0][0].data).not.toHaveProperty('source')
     })
   })
 

@@ -40,6 +40,17 @@ describe('CouponsService', () => {
       })
     })
 
+    it('does not filter by source when no source filter is given', async () => {
+      couponDelegate.findMany.mockResolvedValueOnce([])
+      couponDelegate.count.mockResolvedValueOnce(0)
+
+      await service.findAll({})
+
+      // Without this the welcome coupon would drop out of the plain
+      // listing, which is where the admin finds it.
+      expect(couponDelegate.findMany.mock.calls[0][0].where).not.toHaveProperty('source')
+    })
+
     it('applies search, type, scope and active filters', async () => {
       couponDelegate.findMany.mockResolvedValueOnce([])
       couponDelegate.count.mockResolvedValueOnce(0)

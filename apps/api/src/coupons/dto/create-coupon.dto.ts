@@ -11,6 +11,7 @@ import {
   Min,
 } from 'class-validator'
 import type { CouponSource } from '@theokallia/types'
+import { StrictValue } from '../../utils/strict-value'
 
 export type CouponType = 'percent' | 'fixed' | 'free_shipping'
 export type CouponScope = 'storewide' | 'category' | 'product'
@@ -96,9 +97,16 @@ export class CreateCouponDto {
   @IsIn(['welcome'])
   source?: CouponSource
 
-  /** Email this coupon to new customers when they sign up. */
+  /**
+   * Email this coupon to new customers when they sign up.
+   *
+   * `@StrictValue()` parses the raw body value itself, so the global
+   * ValidationPipe's implicit conversion cannot turn the string `"false"`
+   * into `true` — see `utils/strict-value.ts`.
+   */
   @ApiPropertyOptional({ default: false })
   @IsOptional()
+  @StrictValue()
   @IsBoolean()
   autoIssue?: boolean
 }

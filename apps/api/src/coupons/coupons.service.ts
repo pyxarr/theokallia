@@ -222,6 +222,7 @@ export class CouponsService {
    * managed atomically inside order creation and reservation expiry.
    * autoIssue is only written when the caller sends it, so a caller that
    * does not know about the field does not silently switch it off.
+   * A `null` counts as absent — the column is NOT NULL.
    */
   async update(id: string, dto: UpdateCouponDto) {
     await this.findOne(id)
@@ -229,7 +230,7 @@ export class CouponsService {
     const { autoIssue, ...rest } = dto
     const data = {
       ...rest,
-      ...(autoIssue !== undefined && { autoIssue }),
+      ...(autoIssue != null && { autoIssue }),
     }
     if (data.code !== undefined) {
       data.code = data.code.trim().toUpperCase()
