@@ -55,6 +55,16 @@ const SITE_CONFIG_KEYS = [
 type SiteConfigKey = (typeof SITE_CONFIG_KEYS)[number]
 
 /**
+ * The fields the API validates with `@IsInt()`. The two money fields —
+ * `vipSpendThreshold` and `welcomeDiscountMinOrder` — may be fractional.
+ */
+const INTEGER_SITE_CONFIG_KEYS: readonly SiteConfigKey[] = [
+  'vipOrderThreshold',
+  'welcomeDiscountPercent',
+  'welcomeDiscountExpiry',
+]
+
+/**
  * The editable values are held as strings so a field can be cleared while
  * typing; the numbers are parsed on save.
  */
@@ -105,6 +115,9 @@ export default function SettingsPage() {
   const [isZoneDialogOpen, setIsZoneDialogOpen] = useState(false)
   const [zoneName, setZoneName] = useState('')
   const [zoneRate, setZoneRate] = useState('')
+  // A new zone is live by default — the admin can uncheck it before
+  // saving.
+  const [zoneActive, setZoneActive] = useState(true)
 
   // Seed the form from the loaded settings. Keyed on the query data, so a
   // refetch that returns the same row leaves the typing alone.
@@ -116,19 +129,21 @@ export default function SettingsPage() {
 
   const zoneList = zones ?? []
 
-  // A failed query never produces data, so the form can never be seeded.
-  // That is an error, not a loading state: without this the page would sit
-  // on skeletons forever with a dead Save button.
-  const configErrorMessage =
-    isConfigError && !config
-      ? errorMessage(configError, 'Could not load settings')
-      : null
+  // Two separate questions, two separate flags:
+  //  - is the query in error? The banner says so, even when the last
+  //    known values are still on screen — otherwise a failed background
+  //    refetch leaves stale rates looking current.
+  //  - is there any data at all? Without it the form cards are hidden
+  //    and replaced by the error.
+  const configErrorMessage = isConfigError
+    ? errorMessage(configError, 'Could not load settings')
+    : null
+  const hasConfigData = config !== undefined
   const isConfigLoading =
-    isConfigPending || (!isFormSeeded && configErrorMessage === null)
-  const zonesErrorMessage =
-    isZonesError && zoneList.length === 0
-      ? errorMessage(zonesError, 'Could not load shipping zones')
-      : null
+    isConfigPending || (!isFormSeeded && hasConfigData && !configErrorMessage)
+  const zonesErrorMessage = isZonesError
+    ? errorMessage(zonesError, 'Could not load shipping zones')
+    : null
 
   const handleSave = async () => {
     const payload: SiteConfigInput = {}
@@ -149,6 +164,19 @@ export default function SettingsPage() {
 
     if (invalid.length > 0) {
       toast.error(`Enter a valid number for: ${invalid.join(', ')}`)
+      return
+    }
+
+    // The API validates these with `@IsInt()`. A fractional value would
+    // be rejected there, and because every field travels in the same
+    // request the other four valid values would not be saved either —
+    // so the offending field is named here instead.
+    const notWhole = INTEGER_SITE_CONFIG_KEYS.filter(
+      (key) => payload[key] !== undefined && !Number.isInteger(payload[key]),
+    )
+
+    if (notWhole.length > 0) {
+      toast.error(`Enter a whole number for: ${notWhole.join(', ')}`)
       return
     }
 
@@ -197,6 +225,7 @@ export default function SettingsPage() {
     setIsZoneDialogOpen(false)
     setZoneName('')
     setZoneRate('')
+    setZoneActive(true)
   }
 
   const handleCreateZone = async () => {
@@ -212,7 +241,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await createZone({ name, rate })
+      await createZone({ name, rate, active: zoneActive })
       toast.success(`${name} added`)
       closeZoneDialog()
     } catch (err) {
@@ -233,7 +262,7 @@ export default function SettingsPage() {
         </div>
         <Button
           onClick={() => void handleSave()}
-          disabled={isSaving || isConfigLoading || configErrorMessage !== null}
+          disabled={isSaving || isConfigLoading || !hasConfigData}
         >
           {isSaving ? 'Saving…' : 'Save changes'}
         </Button>
@@ -248,7 +277,7 @@ export default function SettingsPage() {
         </p>
       )}
 
-      {configErrorMessage === null && (
+      {hasConfigData && (
         <>
           <Card>
             <CardHeader>
@@ -310,7 +339,8 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Welcome discount</CardTitle>
               <CardDescription>
-                Applied to new customers through a single-use welcome coupon.
+                Stored for the welcome coupon, which is not wired up yet —
+                no customer is given a welcome discount today.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -398,6 +428,15 @@ export default function SettingsPage() {
           </Button>
         </CardHeader>
         <CardContent>
+          {zonesErrorMessage && zoneList.length > 0 && (
+            <p
+              role="alert"
+              className="mb-4 rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
+            >
+              {zonesErrorMessage} The rates below are the last ones that
+              loaded.
+            </p>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -417,26 +456,30 @@ export default function SettingsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {!isZonesPending && zonesErrorMessage && (
-                <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="text-center text-destructive"
-                  >
-                    <p role="alert">{zonesErrorMessage}</p>
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isZonesPending && !zonesErrorMessage && zoneList.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="text-center text-muted-foreground"
-                  >
-                    No shipping zones yet.
-                  </TableCell>
-                </TableRow>
-              )}
+              {!isZonesPending &&
+                zonesErrorMessage &&
+                zoneList.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-destructive"
+                    >
+                      <p role="alert">{zonesErrorMessage}</p>
+                    </TableCell>
+                  </TableRow>
+                )}
+              {!isZonesPending &&
+                !zonesErrorMessage &&
+                zoneList.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-muted-foreground"
+                    >
+                      No shipping zones yet.
+                    </TableCell>
+                  </TableRow>
+                )}
               {zoneList.map((zone) => {
                 const draft = rateDrafts[zone.id]
                 const isSavingRow = savingZoneId === zone.id
@@ -499,7 +542,10 @@ export default function SettingsPage() {
           <DialogHeader>
             <DialogTitle>Add shipping zone</DialogTitle>
             <DialogDescription>
-              Create a delivery zone with a flat NGN rate.
+              Create a delivery zone with a flat NGN rate. A new zone
+              applies to no state until states are mapped to it — the
+              state mapping is seeded by the API&apos;s seed:zones script,
+              not by this page.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
@@ -522,6 +568,22 @@ export default function SettingsPage() {
                 value={zoneRate}
                 onChange={(event) => setZoneRate(event.target.value)}
               />
+            </div>
+            <div className="flex flex-col gap-2">
+              {/* The id matches the id base-ui puts on the checkbox's
+                  `aria-labelledby`, so the box is named "Active". */}
+              <Label
+                htmlFor="zoneActive"
+                id="zoneActive-label"
+                className="flex items-center gap-2"
+              >
+                <Checkbox
+                  id="zoneActive"
+                  checked={zoneActive}
+                  onCheckedChange={(checked) => setZoneActive(checked)}
+                />
+                Active
+              </Label>
             </div>
           </div>
           <DialogFooter>

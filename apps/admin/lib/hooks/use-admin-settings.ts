@@ -23,9 +23,11 @@ export interface SiteConfigInput {
 /**
  * The only fields the shipping-zone write endpoints accept.
  * Kept separate from ShippingZone for the same reason as SiteConfigInput.
+ *
+ * There is no `name` here: a zone's name is fixed at creation time.
+ * Checkout resolves a zone by name, so the API refuses to rename one.
  */
 export interface ShippingZoneInput {
-  name?: string
   rate?: number
   active?: boolean
 }
