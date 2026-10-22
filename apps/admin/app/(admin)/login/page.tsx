@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
+import { safeRedirectTarget } from '@/lib/redirect-target'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -32,8 +33,12 @@ export default function LoginPage() {
         return
       }
 
+      const next = safeRedirectTarget(
+        new URLSearchParams(window.location.search).get('next'),
+        '/dashboard',
+      )
       toast.success('Signed in')
-      router.push('/dashboard')
+      router.push(next)
     } catch {
       toast.error('Could not reach the server')
     } finally {

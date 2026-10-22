@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 
 /**
@@ -27,6 +27,7 @@ export default function AdminGuard({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { data: session, isPending } = authClient.useSession()
 
   const user = session?.user as AdminSessionUser | undefined
@@ -35,11 +36,11 @@ export default function AdminGuard({
   useEffect(() => {
     if (isPending) return
     if (!user) {
-      router.replace('/login')
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`)
     } else if (!isAdmin) {
       router.replace('/unauthorized')
     }
-  }, [isPending, user, isAdmin, router])
+  }, [isPending, user, isAdmin, pathname, router])
 
   if (isPending) {
     return (

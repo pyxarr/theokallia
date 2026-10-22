@@ -29,7 +29,7 @@ const Layout = async ({ children }: Args) => {
   const requestHeaders = await headers()
   const user = await getAuthUser(requestHeaders)
   if (!user) {
-    redirect('/login')
+    redirect('/login?next=/studio')
   }
 
   return (
