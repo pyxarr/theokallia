@@ -7,18 +7,18 @@ import { EmailLayout } from './_components/email-layout'
 export interface WelcomeEmailProps {
   firstName: string
   couponCode: string
-  discountPercent: number
+  discountLabel: string
   minOrder: number
-  expiresInDays: number
+  expiresAt: string | null
 }
 
 /** Welcome email with the first-purchase coupon. */
 export const WelcomeEmail: EmailComponent<WelcomeEmailProps> = ({
   firstName,
   couponCode,
-  discountPercent,
+  discountLabel,
   minOrder,
-  expiresInDays,
+  expiresAt,
 }) => {
   return (
     <EmailLayout preview="Welcome to Theokallia — your first-order gift inside">
@@ -50,8 +50,10 @@ export const WelcomeEmail: EmailComponent<WelcomeEmailProps> = ({
         </Text>
       </Section>
       <Text style={{ fontFamily: brand.sans, fontSize: '13px', lineHeight: '1.6', color: brand.body }}>
-        Enjoy {discountPercent}% off your order over ₦{minOrder.toLocaleString()}. Valid for{' '}
-        {expiresInDays} days.
+        Enjoy {discountLabel} on your order over ₦{minOrder.toLocaleString()}.
+        {expiresAt
+          ? ` Valid until ${new Date(expiresAt).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' })}.`
+          : ''}
       </Text>
       <div style={{ textAlign: 'center', margin: '24px 0' }}>
         <EmailButton href="https://theokallia.com/shop">Shop the collection</EmailButton>
@@ -63,9 +65,9 @@ export const WelcomeEmail: EmailComponent<WelcomeEmailProps> = ({
 WelcomeEmail.PreviewProps = {
   firstName: 'Ada',
   couponCode: 'WELCOME10',
-  discountPercent: 10,
+  discountLabel: '10% off',
   minOrder: 20000,
-  expiresInDays: 30,
+  expiresAt: '2026-11-30T00:00:00.000Z',
 }
 
 export default WelcomeEmail

@@ -2,6 +2,13 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { prisma } from '../infra/clients'
 import { mailQueue, subscribersQueue, shutdown } from '../infra/queues'
+import { PrismaService } from '../prisma/prisma.service'
+import { WelcomeCouponService } from '../coupons/welcome-coupon.service'
+
+// auth.ts is created outside Nest DI, so the welcome coupon service is
+// built by hand. PrismaService is the thin wrapper around the shared
+// prisma client, so this uses the same connection pool as everything else.
+const welcomeCouponService = new WelcomeCouponService(new PrismaService(), mailQueue)
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -79,6 +86,18 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          // The welcome coupon must never fail the signup: the user row
+          // already exists by the time this hook runs, so a customer who
+          // got a 500 would be told their email is already registered.
+          try {
+            await welcomeCouponService.issueTo({
+              id: user.id,
+              email: user.email,
+              name: user.name,
+            })
+          } catch (err) {
+            console.error('[Auth] Failed to issue the welcome coupon:', err)
+          }
           try {
             await subscribersQueue.add('tag-registered-subscriber', {
               userId: user.id,

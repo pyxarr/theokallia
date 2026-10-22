@@ -1,6 +1,6 @@
 /**
  * Shared Redis and BullMQ singletons — one Redis connection and one instance
- * of each queue, used by NestJS DI, standalone configs (Better Auth) and workers.
+ * of each queue, used by NestJS DI and standalone configs (Better Auth).
  */
 import Redis from 'ioredis'
 import { Queue } from 'bullmq'

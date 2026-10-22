@@ -5,6 +5,7 @@ import { render } from 'react-email'
 import {
   VerificationEmail,
   ResetPasswordEmail,
+  WelcomeEmail,
   OrderConfirmationEmail,
   ShippingUpdateEmail,
   VipNotificationEmail,
@@ -49,6 +50,15 @@ interface ShippingUpdateJobData {
   trackingNumber: string
 }
 
+interface WelcomeCouponJobData {
+  email: string
+  firstName: string
+  code: string
+  discountLabel: string
+  minOrder: number
+  expiresAt: string | null
+}
+
 // Processes all jobs on the 'mail' queue
 // BullMQ automatically retries failed jobs with backoff
 // Concurrency limited to avoid overwhelming Resend rate limits
@@ -78,6 +88,9 @@ export class MailProcessor extends WorkerHost {
             break
           case 'send-shipping-update':
             await this.handleSendShippingUpdate(job as Job<ShippingUpdateJobData>)
+            break
+          case 'send-welcome-coupon':
+            await this.handleSendWelcomeCoupon(job as Job<WelcomeCouponJobData>)
             break
           default:
             throw new Error(`Unknown job name: ${job.name}`)
@@ -158,6 +171,23 @@ export class MailProcessor extends WorkerHost {
     await this.mailService.sendEmail({
       to: job.data.email,
       subject: 'Your Order Has Shipped - THEOKALLIA',
+      html,
+    })
+  }
+
+  private async handleSendWelcomeCoupon(job: Job<WelcomeCouponJobData>): Promise<void> {
+    const html = await render(
+      WelcomeEmail({
+        firstName: job.data.firstName,
+        couponCode: job.data.code,
+        discountLabel: job.data.discountLabel,
+        minOrder: job.data.minOrder,
+        expiresAt: job.data.expiresAt,
+      }),
+    )
+    await this.mailService.sendEmail({
+      to: job.data.email,
+      subject: 'Welcome to THEOKALLIA - your first-order gift',
       html,
     })
   }
