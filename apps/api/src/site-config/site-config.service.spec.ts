@@ -89,4 +89,35 @@ describe('SiteConfigService', () => {
     expect(siteConfigDelegate.create).toHaveBeenCalledTimes(1)
     expect(siteConfigDelegate.update).toHaveBeenCalledTimes(1)
   })
+
+  it('re-reads the row when a concurrent request created it first', async () => {
+    const created = {
+      id: 'singleton',
+      vipOrderThreshold: 3,
+      vipSpendThreshold: 200000,
+      welcomeDiscountPercent: 10,
+      welcomeDiscountMinOrder: 20000,
+      welcomeDiscountExpiry: 30,
+    }
+    // First read: no row. Second read (after the create lost the race):
+    // the row the winner wrote.
+    siteConfigDelegate.findUnique.mockResolvedValueOnce(null)
+    siteConfigDelegate.create.mockRejectedValueOnce({ code: 'P2002' })
+    siteConfigDelegate.findUnique.mockResolvedValueOnce(created)
+
+    const result = await service.get()
+
+    expect(result).toEqual(created)
+    expect(siteConfigDelegate.create).toHaveBeenCalledTimes(1)
+    expect(siteConfigDelegate.findUnique).toHaveBeenCalledTimes(2)
+  })
+
+  it('re-throws the original error when the re-read finds nothing', async () => {
+    const failure = { code: 'P2002' }
+    siteConfigDelegate.findUnique.mockResolvedValueOnce(null)
+    siteConfigDelegate.create.mockRejectedValueOnce(failure)
+    siteConfigDelegate.findUnique.mockResolvedValueOnce(null)
+
+    await expect(service.get()).rejects.toBe(failure)
+  })
 })

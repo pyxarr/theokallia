@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { SiteConfig } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
+import { isUniqueConstraintError } from '../utils/unique-constraint'
 import { UpdateSiteConfigDto } from './dto/update-site-config.dto'
 
 // The settings table holds exactly one row, pinned to this id.
@@ -28,7 +29,29 @@ export class SiteConfigService {
       return existing
     }
 
-    return this.prisma.client.siteConfig.create({ data: { id: SINGLETON_ID } })
+    try {
+      return await this.prisma.client.siteConfig.create({
+        data: { id: SINGLETON_ID },
+      })
+    } catch (err) {
+      // Two requests against a fresh database can both see no row and
+      // both try to create it. The loser gets a unique-constraint error,
+      // so the row the winner just wrote is re-read and returned
+      // instead of failing the request with a 500.
+      if (isUniqueConstraintError(err)) {
+        const created = await this.prisma.client.siteConfig.findUnique({
+          where: { id: SINGLETON_ID },
+        })
+
+        if (created) {
+          return created
+        }
+      }
+
+      // Anything else — and the impossible case where the row still is
+      // not there — is the original error.
+      throw err
+    }
   }
 
   /**

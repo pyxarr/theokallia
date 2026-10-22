@@ -12,6 +12,11 @@ import { UpdateShippingZoneDto } from './update-shipping-zone.dto'
  * Every column of the shipping zone table is non-nullable, so an
  * explicit `null` has to be rejected here — otherwise it would reach
  * Prisma and surface as an unhandled 500 instead of a 400.
+ *
+ * The zone name is NOT part of the body: checkout resolves a zone by
+ * name, so a rename would break every order routed through it. The
+ * global ValidationPipe runs with `forbidNonWhitelisted: true`, so a
+ * payload that still carries a name is a 400.
  */
 describe('UpdateShippingZoneDto', () => {
   const toInstance = (payload: Record<string, unknown>) =>
@@ -20,29 +25,40 @@ describe('UpdateShippingZoneDto', () => {
     })
 
   it('rejects an explicit null for a field', async () => {
-    const dto = toInstance({ name: null })
+    const dto = toInstance({ rate: null })
 
     const errors = await validate(dto)
 
     expect(errors).toHaveLength(1)
-    expect(errors[0].property).toBe('name')
-    expect(errors[0].constraints).toHaveProperty('isString')
+    expect(errors[0].property).toBe('rate')
+    expect(errors[0].constraints).toHaveProperty('isNumber')
   })
 
   it('rejects an explicit null for every field', async () => {
-    const dto = toInstance({ name: null, rate: null, active: null })
+    const dto = toInstance({ rate: null, active: null })
 
     const errors = await validate(dto)
 
     expect(errors.map((error) => error.property).sort()).toEqual([
       'active',
-      'name',
       'rate',
     ])
     const rate = errors.find((error) => error.property === 'rate')
     const active = errors.find((error) => error.property === 'active')
     expect(rate?.constraints).toHaveProperty('isNumber')
     expect(active?.constraints).toHaveProperty('isBoolean')
+  })
+
+  it('rejects a rename — the zone name is not an updatable field', async () => {
+    const dto = toInstance({ name: 'Lagos' })
+
+    // `whitelist` + `forbidNonWhitelisted` mirror the global pipe.
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    })
+
+    expect(errors.map((error) => error.property)).toContain('name')
   })
 
   it('accepts a payload that omits every field (PATCH no-op)', async () => {
@@ -53,20 +69,18 @@ describe('UpdateShippingZoneDto', () => {
     expect(errors).toEqual([])
     // An omitted field stays `undefined`, which Prisma treats as
     // "do not change" — so the column keeps its current value.
-    expect(dto.name).toBeUndefined()
     expect(dto.rate).toBeUndefined()
     expect(dto.active).toBeUndefined()
   })
 
   it('accepts a partial payload with valid values', async () => {
-    const dto = toInstance({ name: 'Lagos' })
+    const dto = toInstance({ rate: 3000 })
 
     const errors = await validate(dto)
 
     expect(errors).toEqual([])
-    expect(dto.name).toBe('Lagos')
+    expect(dto.rate).toBe(3000)
     // Only the field the client sent carries a value.
-    expect(dto.rate).toBeUndefined()
     expect(dto.active).toBeUndefined()
   })
 
@@ -88,26 +102,6 @@ describe('UpdateShippingZoneDto', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].property).toBe('rate')
     expect(errors[0].constraints).toHaveProperty('isNumber')
-  })
-
-  it('rejects an empty name', async () => {
-    const dto = toInstance({ name: '' })
-
-    const errors = await validate(dto)
-
-    expect(errors).toHaveLength(1)
-    expect(errors[0].property).toBe('name')
-    expect(errors[0].constraints).toHaveProperty('isNotEmpty')
-  })
-
-  it('rejects a whitespace-only name', async () => {
-    const dto = toInstance({ name: '   ' })
-
-    const errors = await validate(dto)
-
-    expect(errors).toHaveLength(1)
-    expect(errors[0].property).toBe('name')
-    expect(errors[0].constraints).toHaveProperty('matches')
   })
 
   it('rejects a blank rate instead of storing it as 0', async () => {

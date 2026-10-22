@@ -32,10 +32,16 @@ export async function resolveShippingZone(address: {
   }
 
   // Nigerian state → look up in DB
+  //
+  // The lookup deliberately does NOT filter on `active`. An inactive zone
+  // still has to be found here: `orders.service.ts` refuses the order
+  // with a clear "not currently available" message when the zone it
+  // resolved is switched off. Filtering the inactive zone out would fall
+  // through to the "Nationwide" fallback below and charge the customer
+  // the Nationwide rate for a zone that was deliberately switched off.
   const zoneState = await getPrisma().shippingZoneState.findFirst({
     where: {
       state: { equals: normalizedState, mode: 'insensitive' },
-      shippingZone: { active: true },
     },
     select: { shippingZone: { select: { name: true } } },
   })

@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { ShippingZone } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
+import { isUniqueConstraintError } from '../../utils/unique-constraint'
 import { CreateShippingZoneDto } from './dto/create-shipping-zone.dto'
 import { UpdateShippingZoneDto } from './dto/update-shipping-zone.dto'
 
@@ -65,6 +66,12 @@ export class ShippingZonesService {
   /**
    * Applies the given fields to an existing zone and returns the
    * updated row. Fields left out of the DTO keep their current value.
+   *
+   * The zone name can NOT be changed here. Checkout resolves a zone by
+   * name (`shipping-zone-mapping.config.ts` returns the name, and
+   * `orders.service.ts` looks the rate up by name), and the state
+   * mapping rows reference the zone by id — so a rename would break
+   * every order routed through that zone.
    */
   async update(id: string, dto: UpdateShippingZoneDto): Promise<ShippingZone> {
     const existing = await this.prisma.client.shippingZone.findUnique({
@@ -75,35 +82,24 @@ export class ShippingZonesService {
       throw new NotFoundException('Shipping zone ' + id + ' not found.')
     }
 
-    const name = dto.name !== undefined ? dto.name.trim() : existing.name
-
     try {
       return await this.prisma.client.shippingZone.update({
         where: { id },
         data: {
-          ...(dto.name !== undefined && { name: dto.name.trim() }),
           ...(dto.rate !== undefined && { rate: dto.rate }),
           ...(dto.active !== undefined && { active: dto.active }),
         },
       })
     } catch (err) {
+      // The name is no longer writable, so the unique constraint on it
+      // cannot be violated here — but a future constraint could, and an
+      // unhandled Prisma error would surface as a 500.
       if (isUniqueConstraintError(err)) {
-        throw new ConflictException('A shipping zone named "' + name + '" already exists.')
+        throw new ConflictException(
+          'This shipping zone conflicts with another record.',
+        )
       }
       throw err
     }
   }
-}
-
-/**
- * Prisma reports a unique-constraint violation with error code P2002.
- * Narrowed without `any` so the caller can turn it into a 409.
- */
-function isUniqueConstraintError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code?: unknown }).code === 'P2002'
-  )
 }

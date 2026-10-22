@@ -1,18 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  Matches,
-  Min,
-  ValidateIf,
-} from 'class-validator'
+import { IsBoolean, IsNumber, Min, ValidateIf } from 'class-validator'
 import { StrictValue } from '../../../utils/strict-value'
 
 /**
  * DTO for updating an existing shipping zone — all fields optional
  * (PATCH semantics). Fields left out keep their current value.
+ *
+ * There is deliberately NO `name` field. Checkout resolves a zone by
+ * name (`shipping-zone-mapping.config.ts` returns the name and
+ * `orders.service.ts` looks the rate up by name), and the state
+ * mapping rows point at the zone by id — so renaming a zone would
+ * break every order routed through it. A zone's name is fixed at
+ * creation time.
  *
  * `@ValidateIf` (rather than `@IsOptional`) is what makes an explicit
  * `null` a 400 instead of a 500: the field is skipped when absent, but
@@ -23,14 +22,6 @@ import { StrictValue } from '../../../utils/strict-value'
  * (`""`) into `0` — see `utils/strict-value.ts`.
  */
 export class UpdateShippingZoneDto {
-  /** Zone name. Unique in the DB, stored trimmed. */
-  @ApiPropertyOptional({ example: 'Nationwide' })
-  @ValidateIf((_object, value) => value !== undefined)
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/\S/)
-  name?: string
-
   /** Flat NGN delivery rate charged for this zone. */
   @ApiPropertyOptional({ example: 2500 })
   @ValidateIf((_object, value) => value !== undefined)

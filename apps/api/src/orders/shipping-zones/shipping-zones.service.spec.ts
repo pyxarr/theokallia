@@ -77,6 +77,21 @@ describe('ShippingZonesService', () => {
     zoneDelegate.findUnique.mockResolvedValueOnce(existing)
     zoneDelegate.update.mockRejectedValueOnce({ code: 'P2002' })
 
-    await expect(service.update('a', { name: 'Lagos' })).rejects.toThrow(/already exists/i)
+    await expect(service.update('a', { rate: 4000 })).rejects.toThrow(
+      /conflicts/i,
+    )
+  })
+
+  it('never writes the zone name — a rename would break checkout', async () => {
+    const existing = { id: 'a', name: 'Nationwide', rate: 2500, active: true }
+    zoneDelegate.findUnique.mockResolvedValueOnce(existing)
+    zoneDelegate.update.mockResolvedValueOnce({ ...existing, rate: 4000 })
+
+    await service.update('a', { rate: 4000 })
+
+    expect(zoneDelegate.update).toHaveBeenCalledWith({
+      where: { id: 'a' },
+      data: { rate: 4000 },
+    })
   })
 })
