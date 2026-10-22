@@ -181,7 +181,11 @@ describe('SubscribersService', () => {
 
       // §10.1.2 only ensures "registered" is present; swapping "guest" for
       // "registered" is §10.1.3's job, on account creation.
-      expect(subscriber.record?.tags).toEqual(['guest', 'registered'])
+      // Sorted, because the order of the tags carries no meaning.
+      expect([...(subscriber.record?.tags ?? [])].sort()).toEqual([
+        'guest',
+        'registered',
+      ])
     })
 
     it('does not duplicate the "registered" tag', async () => {
