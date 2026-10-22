@@ -134,7 +134,9 @@ export default function SettingsPage() {
   //    known values are still on screen — otherwise a failed background
   //    refetch leaves stale rates looking current.
   //  - is there any data at all? Without it the form cards are hidden
-  //    and replaced by the error.
+  //    and replaced by the error. While the first load is still in flight
+  //    there is no data yet either, but the cards are still shown with
+  //    skeletons rather than a blank gap.
   const configErrorMessage = isConfigError
     ? errorMessage(configError, 'Could not load settings')
     : null
@@ -277,7 +279,7 @@ export default function SettingsPage() {
         </p>
       )}
 
-      {hasConfigData && (
+      {(hasConfigData || isConfigLoading) && (
         <>
           <Card>
             <CardHeader>
