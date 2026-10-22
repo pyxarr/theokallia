@@ -1,9 +1,9 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
-import { redis } from '../infra/clients'
+import { redis } from '../infra/queues'
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  // Shared Redis connection from infra/clients
+  // Shared Redis connection from infra/queues
   get client() {
     return redis
   }

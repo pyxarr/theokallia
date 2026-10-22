@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { prisma, mailQueue, subscribersQueue, shutdown } from '../infra/clients'
+import { prisma } from '../infra/clients'
+import { mailQueue, subscribersQueue, shutdown } from '../infra/queues'
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
