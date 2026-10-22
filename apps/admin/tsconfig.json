@@ -2,6 +2,7 @@
   "extends": "@theokallia/typescript-config/nextjs.json",
   "compilerOptions": {
     "target": "ES2022",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./*"],
       "@payload-config": ["./payload.config.ts"]

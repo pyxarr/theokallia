@@ -46,8 +46,11 @@ export function safeRedirectTarget(
     // path is ever returned.
     if (!target.startsWith('/') || target.startsWith('//')) return fallback
 
-    // Resolve the value being returned the same way the browser will, in
-    // case the parser rewrites it into another origin.
+    // The check above catches a path that is ALREADY protocol-relative;
+    // this one catches the parser PRODUCING one — it rewrites a
+    // single-slash path into an authority, which today's parser does not
+    // do but a future one might. Both checks are kept on purpose: they
+    // cover different failures, and either one alone leaves a hole.
     if (new URL(target, base).origin !== base.origin) return fallback
 
     return target

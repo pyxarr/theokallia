@@ -10,7 +10,8 @@
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",
     "lint": "eslint --max-warnings 0",
-    "check-types": "next typegen && tsc --noEmit"
+    "check-types": "next typegen && tsc --noEmit",
+    "test": "node --test lib/*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
