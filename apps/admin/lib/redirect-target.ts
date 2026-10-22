@@ -10,9 +10,9 @@
  * Resolving with the same parser the browser uses catches every case at
  * once.
  *
- * Only the path is returned, and it is resolved a second time before it is
- * handed back, so whatever the input, the value the router receives is a
- * same-origin path.
+ * Only a single-slash path is returned, and it is resolved a second time
+ * before it is handed back, so whatever the input, the value the router
+ * receives is a same-origin path.
  */
 export function safeRedirectTarget(
   value: string | null | undefined,
@@ -42,8 +42,12 @@ export function safeRedirectTarget(
 
     // The resolved path can itself be protocol-relative — the parser puts
     // the path after an explicit host, so "//host//evil" yields the path
-    // "//evil", which the browser reads as off-origin. Resolve the value
-    // being returned the same way the browser will, and check it again.
+    // "//evil", which the browser reads as off-origin. Only a single-slash
+    // path is ever returned.
+    if (!target.startsWith('/') || target.startsWith('//')) return fallback
+
+    // Resolve the value being returned the same way the browser will, in
+    // case the parser rewrites it into another origin.
     if (new URL(target, base).origin !== base.origin) return fallback
 
     return target
