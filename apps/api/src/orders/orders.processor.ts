@@ -6,6 +6,14 @@ import { OrdersService } from './orders.service'
 import { CouponsService } from '../coupons/coupons.service'
 import { Prisma } from '@prisma/client'
 
+interface CleanupReservationJobData {
+  orderId: string
+}
+
+interface EvaluateVipJobData {
+  userId: string
+}
+
 @Processor('orders')
 export class OrdersProcessor extends WorkerHost {
   private readonly logger = new Logger(OrdersProcessor.name)
@@ -18,10 +26,16 @@ export class OrdersProcessor extends WorkerHost {
     super()
   }
 
-  async process(job: Job<any, any, string>): Promise<any> {
+  async process(job: Job): Promise<void> {
     switch (job.name) {
       case 'cleanup-reservation':
-        return this.handleReservationExpiry(job.data.orderId)
+        return this.handleReservationExpiry(
+          (job as Job<CleanupReservationJobData>).data.orderId,
+        )
+      case 'evaluate-vip':
+        return this.ordersService.evaluateVip(
+          (job as Job<EvaluateVipJobData>).data.userId,
+        )
       default:
         this.logger.warn(`Unknown job name: ${job.name}`)
     }

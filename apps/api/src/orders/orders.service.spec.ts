@@ -2,6 +2,7 @@ import { Queue } from 'bullmq'
 import { OrdersService } from './orders.service'
 import { PrismaService } from '../prisma/prisma.service'
 import { CouponsService } from '../coupons/coupons.service'
+import { SiteConfigService } from '../site-config/site-config.service'
 
 /**
  * Unit tests for the Phase 6 VIP evaluation that runs after an order is paid.
@@ -17,17 +18,16 @@ describe('OrdersService — VIP evaluation', () => {
   }
   const orderDelegate = { aggregate: jest.fn() }
   const userDelegate = { findUnique: jest.fn(), update: jest.fn() }
-  const siteConfigDelegate = { findUnique: jest.fn() }
   const subscriberDelegate = { upsert: jest.fn() }
   const ordersQueue = { add: jest.fn() }
   const mailQueue = { add: jest.fn() }
+  const siteConfigService = { get: jest.fn() }
 
   const prisma = {
     client: {
       $transaction: jest.fn(),
       order: orderDelegate,
       user: userDelegate,
-      siteConfig: siteConfigDelegate,
       subscriber: subscriberDelegate,
     },
   }
@@ -54,9 +54,10 @@ describe('OrdersService — VIP evaluation', () => {
       ordersQueue as unknown as Queue,
       mailQueue as unknown as Queue,
       { validateCoupon: jest.fn() } as unknown as CouponsService,
+      siteConfigService as unknown as SiteConfigService,
     )
 
-    siteConfigDelegate.findUnique.mockResolvedValue({
+    siteConfigService.get.mockResolvedValue({
       vipOrderThreshold: 3,
       vipSpendThreshold: 200000,
     })
@@ -174,16 +175,20 @@ describe('OrdersService — VIP evaluation', () => {
     expect(subscriberDelegate.upsert).not.toHaveBeenCalled()
   })
 
-  it('falls back to the default thresholds when no SiteConfig row exists', async () => {
-    siteConfigDelegate.findUnique.mockResolvedValue(null)
+  it('reads the VIP thresholds from the site config service', async () => {
+    siteConfigService.get.mockResolvedValue({
+      vipOrderThreshold: 1,
+      vipSpendThreshold: 1000000,
+    })
     userDelegate.findUnique.mockResolvedValue(baseUser)
     orderDelegate.aggregate.mockResolvedValue({
-      _count: { _all: 3 },
+      _count: { _all: 1 },
       _sum: { total: 30000 },
     })
 
     await service.evaluateVip('usr_1')
 
+    expect(siteConfigService.get).toHaveBeenCalled()
     expect(userDelegate.update).toHaveBeenCalledWith({
       where: { id: 'usr_1' },
       data: { isVip: true, vipSince: expect.any(Date) },

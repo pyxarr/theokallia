@@ -17,6 +17,7 @@ import {
 } from './dto/admin-orders.dto'
 import { validateStatusTransition } from './order-transitions.config'
 import { fetchProductAssets } from '../utils/attach-assets'
+import { SiteConfigService } from '../site-config/site-config.service'
 
 @Injectable()
 export class OrdersService {
@@ -25,6 +26,7 @@ export class OrdersService {
     @InjectQueue('orders') private ordersQueue: Queue,
     @InjectQueue('mail') private mailQueue: Queue,
     private couponsService: CouponsService,
+    private siteConfigService: SiteConfigService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto): Promise<Order> {
@@ -347,14 +349,8 @@ export class OrdersService {
    * subscriber record. No-op when the customer is already VIP.
    */
   async evaluateVip(userId: string) {
-    // Singleton row (id: 'singleton') guaranteed by migration.
-    // Fallback to defaults if row somehow missing.
-    const config = await this.prisma.client.siteConfig.findUnique({
-      where: { id: 'singleton' },
-    }) ?? {
-      vipOrderThreshold: 3,
-      vipSpendThreshold: 200000,
-    }
+    // The thresholds live in the single settings row the admin page writes.
+    const config = await this.siteConfigService.get()
 
     const user = await this.prisma.client.user.findUnique({
       where: { id: userId },

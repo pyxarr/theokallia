@@ -6,6 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module'
 import { OrdersProcessor } from './orders.processor'
 import { CouponsModule } from '../coupons/coupons.module'
 import { ShippingZonesModule } from './shipping-zones/shipping-zones.module'
+import { SiteConfigModule } from '../site-config/site-config.module'
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ShippingZonesModule } from './shipping-zones/shipping-zones.module'
     ),
     CouponsModule,
     ShippingZonesModule,
+    SiteConfigModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersProcessor],
