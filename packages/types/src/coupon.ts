@@ -1,4 +1,4 @@
-import type { CouponScope, CouponType } from './enums'
+import type { CouponScope, CouponSource, CouponType } from './enums'
 
 /** A promotional code as returned by the admin coupon endpoints. */
 export interface Coupon {
@@ -14,6 +14,10 @@ export interface Coupon {
   usedCount: number
   expiresAt: string | null
   active: boolean
+  /** 'welcome' for the coupon auto-issued to new customers; null for hand-made promo codes. */
+  source: CouponSource | null
+  /** Whether this coupon is emailed to new customers when they sign up. */
+  autoIssue: boolean
   createdAt: string
   updatedAt: string
 }

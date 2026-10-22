@@ -1,5 +1,7 @@
+import { validate } from 'class-validator'
 import { CouponsService } from './coupons.service'
 import { PrismaService } from '../prisma/prisma.service'
+import { FilterCouponsDto } from './dto/filter-coupons.dto'
 
 /**
  * Unit tests for the admin coupon listing filters and tab-badge counts.
@@ -58,6 +60,33 @@ describe('CouponsService', () => {
       expect(where.code).toEqual({ contains: 'welcome', mode: 'insensitive' })
       expect(couponDelegate.findMany.mock.calls[0][0].skip).toBe(5)
       expect(couponDelegate.findMany.mock.calls[0][0].take).toBe(5)
+    })
+
+    it('filters to the welcome coupon', async () => {
+      couponDelegate.findMany.mockResolvedValueOnce([])
+      couponDelegate.count.mockResolvedValueOnce(0)
+
+      await service.findAll(Object.assign(new FilterCouponsDto(), { source: 'welcome' }))
+
+      expect(couponDelegate.findMany.mock.calls[0][0].where.source).toBe('welcome')
+    })
+
+    it('filters to hand-made promo codes only', async () => {
+      couponDelegate.findMany.mockResolvedValueOnce([])
+      couponDelegate.count.mockResolvedValueOnce(0)
+
+      await service.findAll(Object.assign(new FilterCouponsDto(), { source: 'promo' }))
+
+      expect(couponDelegate.findMany.mock.calls[0][0].where.source).toBeNull()
+    })
+  })
+
+  describe('FilterCouponsDto validation', () => {
+    it('rejects an unknown coupon source filter', async () => {
+      const dto = Object.assign(new FilterCouponsDto(), { source: 'bogus' })
+
+      const errors = await validate(dto)
+      expect(errors.some((error) => error.property === 'source')).toBe(true)
     })
   })
 

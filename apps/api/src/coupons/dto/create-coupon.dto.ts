@@ -10,6 +10,7 @@ import {
   IsString,
   Min,
 } from 'class-validator'
+import type { CouponSource } from '@theokallia/types'
 
 export type CouponType = 'percent' | 'fixed' | 'free_shipping'
 export type CouponScope = 'storewide' | 'category' | 'product'
@@ -88,4 +89,16 @@ export class CreateCouponDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean
+
+  /** Marks this as the welcome coupon issued to new customers. Leave unset for a hand-made promo code. */
+  @ApiPropertyOptional({ enum: ['welcome'] })
+  @IsOptional()
+  @IsIn(['welcome'])
+  source?: CouponSource
+
+  /** Email this coupon to new customers when they sign up. */
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  autoIssue?: boolean
 }

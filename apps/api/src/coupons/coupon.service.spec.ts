@@ -3,6 +3,7 @@ import { validate } from 'class-validator'
 import { CouponsService } from './coupons.service'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateCouponDto } from './dto/create-coupon.dto'
+import { UpdateCouponDto } from './dto/update-coupon.dto'
 
 /**
  * Unit tests for coupon admin CRUD and the CreateCouponDto validation rules.
@@ -77,6 +78,42 @@ describe('CouponsService', () => {
       const errors = await validate(dto)
       expect(errors.some((error) => error.property === 'value')).toBe(true)
     })
+
+    it('accepts a welcome coupon payload', async () => {
+      const dto = Object.assign(new CreateCouponDto(), {
+        code: 'welcome10',
+        type: 'percent',
+        value: 10,
+        source: 'welcome',
+        autoIssue: true,
+      })
+
+      expect(await validate(dto)).toEqual([])
+    })
+
+    it('rejects an unknown coupon source', async () => {
+      const dto = Object.assign(new CreateCouponDto(), {
+        code: 'BOGUS',
+        type: 'percent',
+        value: 10,
+        source: 'promo',
+      })
+
+      const errors = await validate(dto)
+      expect(errors.some((error) => error.property === 'source')).toBe(true)
+    })
+
+    it('rejects a non-boolean autoIssue', async () => {
+      const dto = Object.assign(new CreateCouponDto(), {
+        code: 'BOGUS',
+        type: 'percent',
+        value: 10,
+        autoIssue: 'yes',
+      })
+
+      const errors = await validate(dto)
+      expect(errors.some((error) => error.property === 'autoIssue')).toBe(true)
+    })
   })
 
   describe('create', () => {
@@ -102,6 +139,26 @@ describe('CouponsService', () => {
       expect(data.perUserLimit).toBeNull()
       expect(data.expiresAt).toBeNull()
       expect(data.active).toBe(true)
+      expect(data.source).toBeNull()
+      expect(data.autoIssue).toBe(false)
+    })
+
+    it('stores the welcome source and the auto-issue flag', async () => {
+      couponDelegate.create.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+
+      await service.create(
+        Object.assign(new CreateCouponDto(), {
+          code: 'welcome10',
+          type: 'percent',
+          value: 10,
+          source: 'welcome',
+          autoIssue: true,
+        }),
+      )
+
+      const data = couponDelegate.create.mock.calls[0][0].data
+      expect(data.source).toBe('welcome')
+      expect(data.autoIssue).toBe(true)
     })
 
     it('maps a duplicate code (P2002) to ConflictException', async () => {
@@ -141,6 +198,27 @@ describe('CouponsService', () => {
       await expect(service.update('c1', { code: 'taken' })).rejects.toBeInstanceOf(
         ConflictException,
       )
+    })
+
+    it('does not write autoIssue when the patch omits it', async () => {
+      couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+      couponDelegate.update.mockResolvedValueOnce({ id: 'c1' })
+
+      await service.update(
+        'c1',
+        Object.assign(new UpdateCouponDto(), { value: 15, autoIssue: undefined }),
+      )
+
+      expect(couponDelegate.update.mock.calls[0][0].data).not.toHaveProperty('autoIssue')
+    })
+
+    it('writes autoIssue when the patch carries it', async () => {
+      couponDelegate.findUnique.mockResolvedValueOnce({ id: 'c1', code: 'WELCOME10' })
+      couponDelegate.update.mockResolvedValueOnce({ id: 'c1' })
+
+      await service.update('c1', Object.assign(new UpdateCouponDto(), { autoIssue: true }))
+
+      expect(couponDelegate.update.mock.calls[0][0].data.autoIssue).toBe(true)
     })
   })
 

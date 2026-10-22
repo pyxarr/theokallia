@@ -109,10 +109,10 @@ export class CouponsService {
 
   /**
    * Returns a paginated coupon list, optionally filtered by code search, type,
-   * scope, and active state. Pagination mirrors the subscribers listing.
+   * scope, source and active state. Pagination mirrors the subscribers listing.
    */
   async findAll(filters: FilterCouponsDto) {
-    const { q, active, type, scope, page = 1, limit = 20 } = filters
+    const { q, active, type, scope, source, page = 1, limit = 20 } = filters
     const skip = (page - 1) * limit
     const search = q?.trim()
 
@@ -120,6 +120,8 @@ export class CouponsService {
       ...(active !== undefined ? { active: active === 'true' } : {}),
       ...(type ? { type } : {}),
       ...(scope ? { scope } : {}),
+      ...(source === 'promo' ? { source: null } : {}),
+      ...(source === 'welcome' ? { source: 'welcome' } : {}),
       ...(search
         ? { code: { contains: search, mode: 'insensitive' as const } }
         : {}),
@@ -192,6 +194,8 @@ export class CouponsService {
           perUserLimit: dto.perUserLimit ?? null,
           expiresAt: dto.expiresAt ?? null,
           active: dto.active ?? true,
+          source: dto.source ?? null,
+          autoIssue: dto.autoIssue ?? false,
         },
       })
     } catch (err: any) {
@@ -216,11 +220,17 @@ export class CouponsService {
   /**
    * Patches a coupon by id. usedCount is never edited here — it is
    * managed atomically inside order creation and reservation expiry.
+   * autoIssue is only written when the caller sends it, so a caller that
+   * does not know about the field does not silently switch it off.
    */
   async update(id: string, dto: UpdateCouponDto) {
     await this.findOne(id)
 
-    const data = { ...dto }
+    const { autoIssue, ...rest } = dto
+    const data = {
+      ...rest,
+      ...(autoIssue !== undefined && { autoIssue }),
+    }
     if (data.code !== undefined) {
       data.code = data.code.trim().toUpperCase()
     }

@@ -36,6 +36,12 @@ export class FilterCouponsDto {
   @IsIn(['storewide', 'category', 'product'])
   scope?: CouponScope
 
+  /** Restrict to the welcome coupon, or to hand-made promo codes only. */
+  @ApiPropertyOptional({ enum: ['welcome', 'promo'] })
+  @IsOptional()
+  @IsIn(['welcome', 'promo'])
+  source?: 'welcome' | 'promo'
+
   /** Current page number — defaults to 1. */
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()

@@ -334,6 +334,10 @@ model Coupon {
   usedCount    Int         @default(0)
   expiresAt    DateTime?
   active       Boolean     @default(true)
+  // source: 'welcome' for the coupon auto-issued to new customers; null for hand-made promo codes
+  source       String?
+  // autoIssue: email this coupon to new customers when they sign up
+  autoIssue    Boolean     @default(false)
   orders       Order[]
   uses         CouponUse[]
   createdAt    DateTime    @default(now())
