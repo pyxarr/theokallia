@@ -93,7 +93,9 @@ describe('ReviewsService', () => {
     })
 
     it('creates a pending review for a purchaser', async () => {
-      productDelegate.findUnique.mockResolvedValueOnce(product)
+      // The service looks the product up twice — once for eligibility, once
+      // for the review itself — so the mock has to answer both calls.
+      productDelegate.findUnique.mockResolvedValue(product)
       reviewDelegate.findFirst.mockResolvedValueOnce(null)
       orderDelegate.findFirst.mockResolvedValueOnce({
         id: 'ord_1',
@@ -135,6 +137,7 @@ describe('ReviewsService', () => {
       expect(reviewDelegate.findMany).toHaveBeenCalledWith({
         where: { productId: product.id, status: 'approved' },
         orderBy: { createdAt: 'desc' },
+        take: 50,
         include: { user: { select: { firstName: true, lastName: true } } },
       })
       expect(result.reviews).toHaveLength(1)

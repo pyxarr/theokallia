@@ -15,10 +15,10 @@ describe('OrdersService — VIP evaluation', () => {
     product: { update: jest.fn() },
     stockReservation: { deleteMany: jest.fn() },
   }
-  const orderDelegate = { findMany: jest.fn() }
+  const orderDelegate = { aggregate: jest.fn() }
   const userDelegate = { findUnique: jest.fn(), update: jest.fn() }
-  const siteConfigDelegate = { findFirst: jest.fn() }
-  const subscriberDelegate = { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() }
+  const siteConfigDelegate = { findUnique: jest.fn() }
+  const subscriberDelegate = { upsert: jest.fn() }
   const ordersQueue = { add: jest.fn() }
   const mailQueue = { add: jest.fn() }
 
@@ -54,24 +54,39 @@ describe('OrdersService — VIP evaluation', () => {
       { validateCoupon: jest.fn() } as unknown as CouponsService,
     )
 
-    tx.order.findUnique.mockResolvedValue({ id: 'ord_1', userId: 'usr_1', reservations: [] })
-    tx.order.update.mockResolvedValue({ id: 'ord_1', userId: 'usr_1', status: 'paid' })
-    siteConfigDelegate.findFirst.mockResolvedValue({
+    siteConfigDelegate.findUnique.mockResolvedValue({
       vipOrderThreshold: 3,
       vipSpendThreshold: 200000,
     })
   })
 
-  it('promotes a customer who reaches the order-count threshold', async () => {
-    userDelegate.findUnique.mockResolvedValue(baseUser)
-    orderDelegate.findMany.mockResolvedValue([
-      { total: 10000 },
-      { total: 10000 },
-      { total: 10000 },
-    ])
-    subscriberDelegate.findUnique.mockResolvedValue(null)
+  it('enqueues the VIP evaluation when an order is paid', async () => {
+    tx.order.findUnique.mockResolvedValue({
+      id: 'ord_1',
+      userId: 'usr_1',
+      reservations: [],
+    })
+    tx.order.update.mockResolvedValue({
+      id: 'ord_1',
+      userId: 'usr_1',
+      status: 'paid',
+    })
 
     await service.markAsPaid('ord_1')
+
+    expect(ordersQueue.add).toHaveBeenCalledWith('evaluate-vip', {
+      userId: 'usr_1',
+    })
+  })
+
+  it('promotes a customer who reaches the order-count threshold', async () => {
+    userDelegate.findUnique.mockResolvedValue(baseUser)
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 3 },
+      _sum: { total: 30000 },
+    })
+
+    await service.evaluateVip('usr_1')
 
     expect(userDelegate.update).toHaveBeenCalledWith({
       where: { id: 'usr_1' },
@@ -86,70 +101,88 @@ describe('OrdersService — VIP evaluation', () => {
         totalSpend: 30000,
       }),
     )
-    expect(subscriberDelegate.create).toHaveBeenCalledWith({
-      data: { email: 'ada@example.com', userId: 'usr_1', tags: ['registered', 'vip'] },
+    expect(subscriberDelegate.upsert).toHaveBeenCalledWith({
+      where: { email: 'ada@example.com' },
+      create: {
+        email: 'ada@example.com',
+        userId: 'usr_1',
+        tags: ['registered', 'vip'],
+        active: true,
+      },
+      update: { userId: 'usr_1', tags: { push: 'vip' } },
     })
   })
 
   it('promotes a customer who reaches the spend threshold', async () => {
     userDelegate.findUnique.mockResolvedValue(baseUser)
-    orderDelegate.findMany.mockResolvedValue([{ total: 250000 }])
-    subscriberDelegate.findUnique.mockResolvedValue({
-      id: 'sub_1',
-      email: 'ada@example.com',
-      tags: ['registered'],
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 1 },
+      _sum: { total: 250000 },
     })
 
-    await service.markAsPaid('ord_1')
+    await service.evaluateVip('usr_1')
 
     expect(userDelegate.update).toHaveBeenCalled()
-    expect(subscriberDelegate.update).toHaveBeenCalledWith({
-      where: { email: 'ada@example.com' },
-      data: { tags: ['registered', 'vip'] },
-    })
+    expect(mailQueue.add).toHaveBeenCalledWith(
+      'send-vip-notification',
+      expect.objectContaining({ totalOrders: 1, totalSpend: 250000 }),
+    )
   })
 
-  it('does not duplicate the vip tag when it is already present', async () => {
+  it('appends the vip tag to the subscriber instead of replacing its tags', async () => {
     userDelegate.findUnique.mockResolvedValue(baseUser)
-    orderDelegate.findMany.mockResolvedValue([{ total: 250000 }])
-    subscriberDelegate.findUnique.mockResolvedValue({
-      id: 'sub_1',
-      email: 'ada@example.com',
-      tags: ['registered', 'vip'],
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 1 },
+      _sum: { total: 250000 },
     })
 
-    await service.markAsPaid('ord_1')
+    await service.evaluateVip('usr_1')
 
-    expect(subscriberDelegate.update).not.toHaveBeenCalled()
+    expect(subscriberDelegate.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: { userId: 'usr_1', tags: { push: 'vip' } },
+      }),
+    )
   })
 
   it('does nothing when the customer is already VIP', async () => {
     userDelegate.findUnique.mockResolvedValue({ ...baseUser, isVip: true })
 
-    await service.markAsPaid('ord_1')
+    await service.evaluateVip('usr_1')
 
-    expect(orderDelegate.findMany).not.toHaveBeenCalled()
+    expect(orderDelegate.aggregate).not.toHaveBeenCalled()
     expect(userDelegate.update).not.toHaveBeenCalled()
     expect(mailQueue.add).not.toHaveBeenCalled()
+    expect(subscriberDelegate.upsert).not.toHaveBeenCalled()
   })
 
   it('does nothing below both thresholds', async () => {
     userDelegate.findUnique.mockResolvedValue(baseUser)
-    orderDelegate.findMany.mockResolvedValue([{ total: 5000 }])
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 1 },
+      _sum: { total: 5000 },
+    })
 
-    await service.markAsPaid('ord_1')
+    await service.evaluateVip('usr_1')
 
     expect(userDelegate.update).not.toHaveBeenCalled()
     expect(mailQueue.add).not.toHaveBeenCalled()
-    expect(subscriberDelegate.create).not.toHaveBeenCalled()
+    expect(subscriberDelegate.upsert).not.toHaveBeenCalled()
   })
 
-  it('skips evaluation when no SiteConfig row exists', async () => {
-    siteConfigDelegate.findFirst.mockResolvedValue(null)
+  it('falls back to the default thresholds when no SiteConfig row exists', async () => {
+    siteConfigDelegate.findUnique.mockResolvedValue(null)
+    userDelegate.findUnique.mockResolvedValue(baseUser)
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 3 },
+      _sum: { total: 30000 },
+    })
 
-    await service.markAsPaid('ord_1')
+    await service.evaluateVip('usr_1')
 
-    expect(userDelegate.findUnique).not.toHaveBeenCalled()
-    expect(userDelegate.update).not.toHaveBeenCalled()
+    expect(userDelegate.update).toHaveBeenCalledWith({
+      where: { id: 'usr_1' },
+      data: { isVip: true, vipSince: expect.any(Date) },
+    })
   })
 })

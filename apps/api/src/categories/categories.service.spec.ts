@@ -49,7 +49,12 @@ describe('CategoriesService', () => {
   beforeEach(() => {
     jest.resetAllMocks()
     service = new CategoriesService(prisma as unknown as PrismaService)
-    $transaction.mockResolvedValue([{ count: 1 }, { id: 'cat-1' }])
+    $transaction.mockImplementation((cb: (tx: unknown) => unknown) =>
+      cb({
+        subcategory: subcategoryDelegate,
+        category: categoryDelegate,
+      }),
+    )
     categoryDelegate.findUnique.mockResolvedValue(ringsCategory)
   })
 
