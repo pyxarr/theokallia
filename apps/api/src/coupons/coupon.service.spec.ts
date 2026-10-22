@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { ConflictException, NotFoundException } from '@nestjs/common'
+import { ConflictException, NotFoundException, ValidationPipe } from '@nestjs/common'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { CouponsService } from './coupons.service'
@@ -127,6 +127,54 @@ describe('CouponsService', () => {
       // implicit conversion would have turned it into `true` and issued
       // the coupon to every new customer.
       expect(await validate(dto)).toEqual([])
+      expect(dto.autoIssue).toBe(false)
+    })
+  })
+
+  /**
+   * The exact bodies the admin's "Welcome coupon" card sends. The global
+   * pipe runs with `forbidNonWhitelisted`, so a field the DTO does not
+   * know — or a `null` the validators reject — would be a 400 instead of
+   * a stored coupon.
+   */
+  describe("the admin's welcome coupon payloads", () => {
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    })
+
+    it("accepts the card's create body", async () => {
+      const dto = await pipe.transform(
+        {
+          code: 'WELCOME10',
+          type: 'percent',
+          value: 10,
+          scope: 'storewide',
+          minOrder: 20000,
+          perUserLimit: 1,
+          maxUses: null,
+          expiresAt: null,
+          active: true,
+          source: 'welcome',
+          autoIssue: true,
+        },
+        { type: 'body', metatype: CreateCouponDto },
+      )
+
+      expect(dto).toBeInstanceOf(CreateCouponDto)
+      expect(dto.source).toBe('welcome')
+      expect(dto.autoIssue).toBe(true)
+    })
+
+    it("accepts the card's toggle body", async () => {
+      const dto = await pipe.transform(
+        { autoIssue: false },
+        { type: 'body', metatype: UpdateCouponDto },
+      )
+
+      expect(dto).toBeInstanceOf(UpdateCouponDto)
       expect(dto.autoIssue).toBe(false)
     })
   })

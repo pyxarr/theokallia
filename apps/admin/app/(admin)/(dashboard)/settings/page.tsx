@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -32,6 +34,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  useAdminCoupons,
+  useCreateCoupon,
+  useUpdateCoupon,
+  type AdminCoupon,
+} from '@/lib/hooks/use-admin-coupons'
+import {
   useCreateShippingZone,
   useShippingZones,
   useSiteConfig,
@@ -44,24 +52,16 @@ import {
 import { errorMessage } from '@/lib/utils'
 
 /** The SiteConfig fields the PATCH body accepts. */
-const SITE_CONFIG_KEYS = [
-  'vipOrderThreshold',
-  'vipSpendThreshold',
-  'welcomeDiscountPercent',
-  'welcomeDiscountMinOrder',
-  'welcomeDiscountExpiry',
-] as const
+const SITE_CONFIG_KEYS = ['vipOrderThreshold', 'vipSpendThreshold'] as const
 
 type SiteConfigKey = (typeof SITE_CONFIG_KEYS)[number]
 
 /**
- * The fields the API validates with `@IsInt()`. The two money fields —
- * `vipSpendThreshold` and `welcomeDiscountMinOrder` — may be fractional.
+ * The fields the API validates with `@IsInt()`. The money field —
+ * `vipSpendThreshold` — may be fractional.
  */
 const INTEGER_SITE_CONFIG_KEYS: readonly SiteConfigKey[] = [
   'vipOrderThreshold',
-  'welcomeDiscountPercent',
-  'welcomeDiscountExpiry',
 ]
 
 /**
@@ -75,10 +75,36 @@ function toFormValues(config: SiteConfig): SiteConfigFormValues {
   return {
     vipOrderThreshold: String(config.vipOrderThreshold),
     vipSpendThreshold: String(config.vipSpendThreshold),
-    welcomeDiscountPercent: String(config.welcomeDiscountPercent),
-    welcomeDiscountMinOrder: String(config.welcomeDiscountMinOrder),
-    welcomeDiscountExpiry: String(config.welcomeDiscountExpiry),
   }
+}
+
+/** A one-line summary of a coupon's terms, for the welcome card. */
+function couponTerms(coupon: AdminCoupon): string {
+  const amount =
+    coupon.type === 'percent'
+      ? `${coupon.value}% off`
+      : coupon.type === 'fixed'
+        ? `NGN ${coupon.value.toLocaleString('en-NG')} off`
+        : 'free shipping'
+  const parts = [
+    amount,
+    coupon.scope === 'storewide' ? 'storewide' : `${coupon.scope} scope`,
+  ]
+
+  if (coupon.minOrder) {
+    parts.push(`minimum order NGN ${coupon.minOrder.toLocaleString('en-NG')}`)
+  }
+  if (coupon.perUserLimit) {
+    parts.push(`${coupon.perUserLimit} use per customer`)
+  }
+  if (coupon.maxUses) {
+    parts.push(`${coupon.maxUses} uses in total`)
+  }
+  if (coupon.expiresAt) {
+    parts.push(`expires ${new Date(coupon.expiresAt).toLocaleDateString('en-NG')}`)
+  }
+
+  return parts.join(' · ')
 }
 
 export default function SettingsPage() {
@@ -100,14 +126,19 @@ export default function SettingsPage() {
     useUpdateShippingZone()
   const { mutateAsync: createZone, isPending: isCreatingZone } =
     useCreateShippingZone()
+  // The welcome offer is one shared coupon row, not a settings column.
+  const { data: welcomeCoupons, isPending: isWelcomePending } =
+    useAdminCoupons({ source: 'welcome', limit: 1 })
+  const { mutateAsync: createCoupon, isPending: isCreatingCoupon } =
+    useCreateCoupon()
+  const { mutateAsync: updateCoupon, isPending: isUpdatingCoupon } =
+    useUpdateCoupon()
 
   const [form, setForm] = useState<SiteConfigFormValues>({
     vipOrderThreshold: '',
     vipSpendThreshold: '',
-    welcomeDiscountPercent: '',
-    welcomeDiscountMinOrder: '',
-    welcomeDiscountExpiry: '',
   })
+  const [welcomeCode, setWelcomeCode] = useState('WELCOME10')
   const [isFormSeeded, setIsFormSeeded] = useState(false)
   // Rates the user has edited but not saved yet, keyed by zone id.
   const [rateDrafts, setRateDrafts] = useState<Record<string, string>>({})
@@ -146,6 +177,9 @@ export default function SettingsPage() {
   const zonesErrorMessage = isZonesError
     ? errorMessage(zonesError, 'Could not load shipping zones')
     : null
+  // The welcome offer is one shared coupon row. The list is filtered to
+  // `source: 'welcome'`, so the first row is the one the API emails.
+  const welcomeCoupon = welcomeCoupons?.pages[0]?.data[0]
 
   const handleSave = async () => {
     const payload: SiteConfigInput = {}
@@ -171,8 +205,8 @@ export default function SettingsPage() {
 
     // The API validates these with `@IsInt()`. A fractional value would
     // be rejected there, and because every field travels in the same
-    // request the other four valid values would not be saved either —
-    // so the offending field is named here instead.
+    // request the other valid value would not be saved either — so the
+    // offending field is named here instead.
     const notWhole = INTEGER_SITE_CONFIG_KEYS.filter(
       (key) => payload[key] !== undefined && !Number.isInteger(payload[key]),
     )
@@ -187,6 +221,60 @@ export default function SettingsPage() {
       toast.success('Settings saved')
     } catch (err) {
       toast.error(errorMessage(err, 'Save failed'))
+    }
+  }
+
+  /**
+   * Creates the shared welcome coupon. The code is editable on purpose: a
+   * duplicate code is a 409, and the admin picks another one rather than
+   * hitting a dead end.
+   */
+  const handleCreateWelcomeCoupon = async () => {
+    const code = welcomeCode.trim()
+    if (code === '') {
+      toast.error('Code is required')
+      return
+    }
+
+    try {
+      await createCoupon({
+        code,
+        type: 'percent',
+        value: 10,
+        scope: 'storewide',
+        minOrder: 20000,
+        perUserLimit: 1,
+        maxUses: null,
+        expiresAt: null,
+        active: true,
+        source: 'welcome',
+        autoIssue: true,
+      })
+      toast.success('Welcome coupon created')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not create the welcome coupon'))
+    }
+  }
+
+  /**
+   * The API only writes `autoIssue` when the body carries it, so this
+   * patch leaves every other field of the coupon alone.
+   */
+  const toggleWelcomeAutoIssue = async (autoIssue: boolean) => {
+    if (!welcomeCoupon) return
+
+    try {
+      await updateCoupon({
+        id: welcomeCoupon.id,
+        input: { autoIssue },
+      })
+      toast.success(
+        autoIssue
+          ? 'Welcome coupon emailed at signup'
+          : 'Welcome coupon not emailed at signup',
+      )
+    } catch (err) {
+      toast.error(errorMessage(err, 'Update failed'))
     }
   }
 
@@ -259,7 +347,7 @@ export default function SettingsPage() {
             Settings
           </h1>
           <p className="text-sm text-muted-foreground">
-            Global thresholds, welcome discounts, and shipping rates.
+            Global thresholds, the welcome coupon, and shipping rates.
           </p>
         </div>
         <Button
@@ -336,85 +424,85 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome discount</CardTitle>
-              <CardDescription>
-                Stored for the welcome coupon, which is not wired up yet —
-                no customer is given a welcome discount today.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              {isConfigLoading ? (
-                <>
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="welcomeDiscountPercent">
-                      Discount percent
-                    </Label>
-                    <Input
-                      id="welcomeDiscountPercent"
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={form.welcomeDiscountPercent}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          welcomeDiscountPercent: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="welcomeDiscountMinOrder">
-                      Minimum order (NGN)
-                    </Label>
-                    <Input
-                      id="welcomeDiscountMinOrder"
-                      type="number"
-                      min={0}
-                      step="any"
-                      value={form.welcomeDiscountMinOrder}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          welcomeDiscountMinOrder: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="welcomeDiscountExpiry">
-                      Expires after (days)
-                    </Label>
-                    <Input
-                      id="welcomeDiscountExpiry"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={form.welcomeDiscountExpiry}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          welcomeDiscountExpiry: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
         </>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome coupon</CardTitle>
+          <CardDescription>
+            One shared code for the welcome offer: promoted publicly and
+            emailed to every new customer at signup. The per-user limit
+            caps each customer at one use.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {isWelcomePending ? (
+            <Skeleton className="h-8 w-full" />
+          ) : welcomeCoupon ? (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-medium">{welcomeCoupon.code}</span>
+                <Badge
+                  variant={welcomeCoupon.active ? 'default' : 'secondary'}
+                >
+                  {welcomeCoupon.active ? 'Active' : 'Inactive'}
+                </Badge>
+                <Button
+                  variant="outline"
+                  render={<Link href={`/coupons/${welcomeCoupon.id}/edit`} />}
+                >
+                  Edit coupon
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {couponTerms(welcomeCoupon)}
+              </p>
+              <div className="flex flex-col gap-2">
+                {/* The id matches the id base-ui puts on the checkbox's
+                    `aria-labelledby`, so the box is named by the label. */}
+                <Label
+                  htmlFor="welcomeAutoIssue"
+                  id="welcomeAutoIssue-label"
+                  className="flex items-center gap-2"
+                >
+                  <Checkbox
+                    id="welcomeAutoIssue"
+                    checked={welcomeCoupon.autoIssue}
+                    onCheckedChange={(checked) =>
+                      void toggleWelcomeAutoIssue(checked)
+                    }
+                    disabled={isUpdatingCoupon}
+                  />
+                  Email to new customers when they sign up
+                </Label>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                No welcome coupon yet. Create one to start the offer.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="flex flex-1 flex-col gap-2">
+                  <Label htmlFor="welcomeCode">Code</Label>
+                  <Input
+                    id="welcomeCode"
+                    value={welcomeCode}
+                    onChange={(event) => setWelcomeCode(event.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={() => void handleCreateWelcomeCoupon()}
+                  disabled={isCreatingCoupon}
+                >
+                  {isCreatingCoupon ? 'Creating…' : 'Create welcome coupon'}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

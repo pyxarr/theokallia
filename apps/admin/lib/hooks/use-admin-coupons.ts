@@ -6,11 +6,12 @@ import type {
   Coupon,
   CouponCounts,
   CouponScope,
+  CouponSource,
   CouponType,
   Paginated,
 } from '@theokallia/types'
 
-export type { CouponCounts, CouponScope, CouponType }
+export type { CouponCounts, CouponScope, CouponSource, CouponType }
 
 export type AdminCoupon = Coupon
 
@@ -19,6 +20,8 @@ export interface AdminCouponFilters {
   active?: boolean
   type?: CouponType
   scope?: CouponScope
+  /** 'welcome' for the welcome coupon, 'promo' for hand-made codes only. */
+  source?: CouponSource | 'promo'
   limit?: number
 }
 
@@ -35,6 +38,10 @@ export interface CreateCouponInput {
   perUserLimit?: number | null
   expiresAt?: string | null
   active?: boolean
+  /** Marks this as the welcome coupon issued to new customers. */
+  source?: CouponSource
+  /** Email this coupon to new customers when they sign up. */
+  autoIssue?: boolean
 }
 
 export type UpdateCouponInput = Partial<CreateCouponInput>
@@ -51,6 +58,7 @@ const fetchAdminCoupons = async (
   if (filters.active !== undefined) params.set('active', String(filters.active))
   if (filters.type) params.set('type', filters.type)
   if (filters.scope) params.set('scope', filters.scope)
+  if (filters.source) params.set('source', filters.source)
   if (filters.limit) params.set('limit', String(filters.limit))
   params.set('page', String(page))
 

@@ -38,6 +38,7 @@ import {
   type AdminCoupon,
   type CouponType,
   type CouponScope,
+  type CouponSource,
 } from '@/lib/hooks/use-admin-coupons'
 import { useAdminCategories } from '@/lib/hooks/use-admin-categories'
 import { useAdminProducts, type AdminProduct } from '@/lib/hooks/use-admin-products'
@@ -55,6 +56,16 @@ const scopeTabs: { label: string; value: CouponScope | 'all' }[] = [
   { label: 'Storewide', value: 'storewide' },
   { label: 'Category', value: 'category' },
   { label: 'Product', value: 'product' },
+]
+
+/**
+ * The welcome coupon is managed from the settings page, so this list is
+ * a promo-code tool by default. `promo` means "hand-made codes only".
+ */
+const sourceTabs: { label: string; value: CouponSource | 'promo' | 'all' }[] = [
+  { label: 'All coupons', value: 'all' },
+  { label: 'Promo codes', value: 'promo' },
+  { label: 'Welcome coupon', value: 'welcome' },
 ]
 
 function formatDate(value: string) {
@@ -88,6 +99,7 @@ export default function CouponsPage() {
   const [typeFilter, setTypeFilter] = useState<CouponType | 'all'>('all')
   const [scopeFilter, setScopeFilter] = useState<CouponScope | 'all'>('all')
   const [activeFilter, setActiveFilter] = useState<'all' | true | false>('all')
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'promo' | 'welcome'>('promo')
   const [deleting, setDeleting] = useState<AdminCoupon | null>(null)
   const [toggling, setToggling] = useState<AdminCoupon | null>(null)
 
@@ -101,6 +113,7 @@ export default function CouponsPage() {
     type: typeFilter === 'all' ? undefined : typeFilter,
     scope: scopeFilter === 'all' ? undefined : scopeFilter,
     active: activeFilter === 'all' ? undefined : activeFilter,
+    source: sourceFilter === 'all' ? undefined : sourceFilter,
   }
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -242,6 +255,19 @@ export default function CouponsPage() {
                 onClick={() => setActiveFilter(value)}
               >
                 {value === 'all' ? 'All' : value ? 'Active' : 'Inactive'}
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {sourceTabs.map((item) => (
+              <Button
+                key={item.value}
+                variant={sourceFilter === item.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSourceFilter(item.value)}
+              >
+                {item.label}
               </Button>
             ))}
           </div>

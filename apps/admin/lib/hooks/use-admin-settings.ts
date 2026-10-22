@@ -15,9 +15,6 @@ export type { SiteConfig, ShippingZone } from '@theokallia/types'
 export interface SiteConfigInput {
   vipOrderThreshold?: number
   vipSpendThreshold?: number
-  welcomeDiscountPercent?: number
-  welcomeDiscountMinOrder?: number
-  welcomeDiscountExpiry?: number
 }
 
 /**
@@ -86,7 +83,7 @@ const createShippingZone = async (
 
 // Hooks
 
-/** The global store settings — VIP thresholds and welcome-discount terms. */
+/** The global store settings — the VIP promotion thresholds. */
 export const useSiteConfig = () => {
   return useQuery({
     queryKey: SITE_CONFIG_QUERY_KEY,

@@ -91,8 +91,7 @@ async function main() {
   // Create/upsert SiteConfig singleton (id: 'singleton')
   // Deletes any old rows with random IDs, ensures exactly one row exists.
   // The `update` branch is empty on purpose: an admin may have edited the
-  // thresholds or the welcome-discount terms, and a re-seed must not undo
-  // that.
+  // thresholds, and a re-seed must not undo that.
   await prisma.siteConfig.deleteMany({
     where: { id: { not: 'singleton' } },
   })
@@ -104,9 +103,6 @@ async function main() {
       id: 'singleton',
       vipOrderThreshold: 3,
       vipSpendThreshold: 200000,
-      welcomeDiscountPercent: 10,
-      welcomeDiscountMinOrder: 20000,
-      welcomeDiscountExpiry: 30,
     },
   })
   console.log('SiteConfig singleton ensured.')

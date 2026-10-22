@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+import { BadRequestException, ValidationPipe } from '@nestjs/common'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { UpdateSiteConfigDto } from './update-site-config.dto'
@@ -15,6 +17,21 @@ describe('UpdateSiteConfigDto', () => {
       enableImplicitConversion: true,
     })
 
+  /**
+   * The app's global pipe, with the same options as `main.ts`. It is the
+   * edge the admin's own requests go through, so it is the edge a stale
+   * field has to fail on.
+   */
+  const pipe = new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+  })
+
+  const transform = (payload: Record<string, unknown>) =>
+    pipe.transform(payload, { type: 'body', metatype: UpdateSiteConfigDto })
+
   it('rejects an explicit null for a field', async () => {
     const dto = toInstance({ vipOrderThreshold: null })
 
@@ -29,9 +46,6 @@ describe('UpdateSiteConfigDto', () => {
     const dto = toInstance({
       vipOrderThreshold: null,
       vipSpendThreshold: null,
-      welcomeDiscountPercent: null,
-      welcomeDiscountMinOrder: null,
-      welcomeDiscountExpiry: null,
     })
 
     const errors = await validate(dto)
@@ -39,9 +53,6 @@ describe('UpdateSiteConfigDto', () => {
     expect(errors.map((error) => error.property).sort()).toEqual([
       'vipOrderThreshold',
       'vipSpendThreshold',
-      'welcomeDiscountExpiry',
-      'welcomeDiscountMinOrder',
-      'welcomeDiscountPercent',
     ])
   })
 
@@ -55,9 +66,6 @@ describe('UpdateSiteConfigDto', () => {
     // "do not change" — so the column keeps its current value.
     expect(dto.vipOrderThreshold).toBeUndefined()
     expect(dto.vipSpendThreshold).toBeUndefined()
-    expect(dto.welcomeDiscountPercent).toBeUndefined()
-    expect(dto.welcomeDiscountMinOrder).toBeUndefined()
-    expect(dto.welcomeDiscountExpiry).toBeUndefined()
   })
 
   it('accepts a partial payload with valid values', async () => {
@@ -74,17 +82,35 @@ describe('UpdateSiteConfigDto', () => {
   it('still rejects out-of-range and non-numeric values', async () => {
     const dto = toInstance({
       vipOrderThreshold: 1.5,
-      welcomeDiscountPercent: 101,
-      welcomeDiscountExpiry: 0,
+      vipSpendThreshold: -1,
     })
 
     const errors = await validate(dto)
 
     expect(errors.map((error) => error.property).sort()).toEqual([
       'vipOrderThreshold',
-      'welcomeDiscountExpiry',
-      'welcomeDiscountPercent',
+      'vipSpendThreshold',
     ])
+  })
+
+  it('rejects a body that still carries a retired welcome-discount field', async () => {
+    // The welcome offer is a coupon now, so the site_config columns it
+    // used are gone. A client still sending one must get a 400, not a
+    // silently dropped value.
+    await expect(
+      transform({ welcomeDiscountPercent: 10 }),
+    ).rejects.toBeInstanceOf(BadRequestException)
+  })
+
+  it('accepts a body carrying only the remaining fields', async () => {
+    const dto = await transform({
+      vipOrderThreshold: 5,
+      vipSpendThreshold: 1000,
+    })
+
+    expect(dto).toBeInstanceOf(UpdateSiteConfigDto)
+    expect(dto.vipOrderThreshold).toBe(5)
+    expect(dto.vipSpendThreshold).toBe(1000)
   })
 
   it('rejects a blank string instead of storing it as 0', async () => {

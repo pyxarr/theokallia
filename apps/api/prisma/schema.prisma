@@ -378,14 +378,10 @@ model Subscriber {
 // Single-row settings table. Only one row ever exists.
 
 model SiteConfig {
-  id                      String   @id @default("singleton")
-  vipOrderThreshold       Int      @default(3)
-  vipSpendThreshold       Float    @default(200000)
-  welcomeDiscountPercent  Int      @default(10)
-  welcomeDiscountMinOrder Float    @default(20000)
-  // welcomeDiscountExpiry: number of days from coupon creation until expiry
-  welcomeDiscountExpiry   Int      @default(30)
-  updatedAt               DateTime @updatedAt
+  id                String   @id @default("singleton")
+  vipOrderThreshold Int      @default(3)
+  vipSpendThreshold Float    @default(200000)
+  updatedAt         DateTime @updatedAt
 
   @@map("site_config")
 }

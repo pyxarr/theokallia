@@ -9,7 +9,7 @@ const SINGLETON_ID = 'singleton'
 
 /**
  * SiteConfigService — reads and writes the single global settings row
- * (VIP promotion thresholds, welcome-discount parameters).
+ * (the VIP promotion thresholds).
  * The row may not exist yet, so every read guarantees it is present.
  */
 @Injectable()

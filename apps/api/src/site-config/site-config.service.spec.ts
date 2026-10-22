@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { SiteConfigService } from './site-config.service'
 import { PrismaService } from '../prisma/prisma.service'
 
@@ -21,14 +22,28 @@ describe('SiteConfigService', () => {
     service = new SiteConfigService(prisma as unknown as PrismaService)
   })
 
+  it('reads a row with only the remaining settings columns', () => {
+    // The welcome offer is a coupon now, so the site_config columns it
+    // used are gone. The Prisma data model is the row shape this
+    // service hands out.
+    const model = Prisma.dmmf.datamodel.models.find(
+      (candidate) => candidate.name === 'SiteConfig',
+    )
+
+    expect(model).toBeDefined()
+    expect(model?.fields.map((field) => field.name).sort()).toEqual([
+      'id',
+      'updatedAt',
+      'vipOrderThreshold',
+      'vipSpendThreshold',
+    ])
+  })
+
   it('returns the existing singleton row without creating one', async () => {
     const row = {
       id: 'singleton',
       vipOrderThreshold: 3,
       vipSpendThreshold: 200000,
-      welcomeDiscountPercent: 10,
-      welcomeDiscountMinOrder: 20000,
-      welcomeDiscountExpiry: 30,
     }
     siteConfigDelegate.findUnique.mockResolvedValueOnce(row)
 
@@ -46,9 +61,6 @@ describe('SiteConfigService', () => {
       id: 'singleton',
       vipOrderThreshold: 3,
       vipSpendThreshold: 200000,
-      welcomeDiscountPercent: 10,
-      welcomeDiscountMinOrder: 20000,
-      welcomeDiscountExpiry: 30,
     }
     siteConfigDelegate.findUnique.mockResolvedValueOnce(null)
     siteConfigDelegate.create.mockResolvedValueOnce(created)
@@ -95,9 +107,6 @@ describe('SiteConfigService', () => {
       id: 'singleton',
       vipOrderThreshold: 3,
       vipSpendThreshold: 200000,
-      welcomeDiscountPercent: 10,
-      welcomeDiscountMinOrder: 20000,
-      welcomeDiscountExpiry: 30,
     }
     // First read: no row. Second read (after the create lost the race):
     // the row the winner wrote.
