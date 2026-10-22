@@ -13,7 +13,7 @@ export const redis = new Redis(process.env.REDIS_URL!)
 export const mailQueue = new Queue('mail', { connection: redis })
 export const subscribersQueue = new Queue('subscribers', { connection: redis })
 
-// Graceful shutdown for standalone usage (auth.ts, workers)
+// Graceful shutdown for standalone usage (auth.ts)
 export const shutdown = async () => {
   await Promise.all([
     prisma.$disconnect(),

@@ -1,4 +1,7 @@
 import { Queue } from 'bullmq'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { WelcomeEmail } from '@theokallia/emails'
+import type { WelcomeEmailProps } from '@theokallia/emails'
 import { WelcomeCouponService } from './welcome-coupon.service'
 import { PrismaService } from '../prisma/prisma.service'
 
@@ -78,6 +81,21 @@ describe('WelcomeCouponService', () => {
     expect(mailQueue.add).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['an empty name', ''],
+    ['a name that starts with a space', ' Ada Lovelace'],
+  ])('greets the customer as "there" when they have %s', async (_case, name) => {
+    couponDelegate.findFirst.mockResolvedValueOnce(welcomeCoupon())
+
+    await service.issueTo({ id: 'usr_1', email: 'ada@example.com', name })
+
+    // An empty name would greet the customer with "Hello ,".
+    expect(mailQueue.add).toHaveBeenCalledWith(
+      'send-welcome-coupon',
+      expect.objectContaining({ firstName: 'there' }),
+    )
+  })
+
   it('does nothing when the welcome coupon has expired', async () => {
     couponDelegate.findFirst.mockResolvedValueOnce(null)
 
@@ -147,5 +165,57 @@ describe('WelcomeCouponService', () => {
       expect.objectContaining({ source: 'welcome', autoIssue: true, active: true }),
     )
     expect(query.orderBy).toEqual({ createdAt: 'asc' })
+  })
+})
+
+/**
+ * The welcome email as the customer sees it. A coupon with no minimum
+ * order must not read "over ₦0", and the amount must be formatted the
+ * same way the rest of the app formats naira.
+ */
+describe('WelcomeEmail', () => {
+  const renderWelcome = (overrides: Partial<WelcomeEmailProps> = {}) =>
+    renderToStaticMarkup(
+      WelcomeEmail({
+        firstName: 'Ada',
+        couponCode: 'WELCOME10',
+        discountLabel: '10% off',
+        minOrder: 20000,
+        expiresAt: null,
+        ...overrides,
+      }),
+    )
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('leaves out the minimum order when the coupon has none', () => {
+    const html = renderWelcome({ minOrder: 0 })
+
+    expect(html).not.toContain('over ₦0')
+    expect(html).toContain('Enjoy 10% off on your order.')
+  })
+
+  it('shows the minimum order when the coupon has one', () => {
+    const html = renderWelcome({ minOrder: 20000 })
+
+    expect(html).toContain('Enjoy 10% off on your order over ₦20,000.')
+  })
+
+  it('formats the minimum order in en-NG whatever the server locale is', () => {
+    jest
+      .spyOn(Number.prototype, 'toLocaleString')
+      .mockImplementation(function (this: number, ...args: unknown[]) {
+        // A server whose default locale is not English would print
+        // "₦20.000" without an explicit locale.
+        const locale = args[0] === 'en-NG' ? 'en-NG' : 'de-DE'
+        return new Intl.NumberFormat(locale).format(this)
+      })
+
+    const html = renderWelcome({ minOrder: 20000 })
+
+    expect(html).toContain('₦20,000')
+    expect(html).not.toContain('₦20.000')
   })
 })

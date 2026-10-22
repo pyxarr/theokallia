@@ -50,7 +50,7 @@ export class WelcomeCouponService {
 
       await this.mailQueue.add('send-welcome-coupon', {
         email: user.email,
-        firstName: user.name?.split(' ')[0] ?? 'there',
+        firstName: user.name?.split(' ')[0] || 'there',
         code: coupon.code,
         discountLabel: this.discountLabel(coupon.type, coupon.value),
         minOrder: coupon.minOrder ?? 0,

@@ -50,7 +50,7 @@ export const WelcomeEmail: EmailComponent<WelcomeEmailProps> = ({
         </Text>
       </Section>
       <Text style={{ fontFamily: brand.sans, fontSize: '13px', lineHeight: '1.6', color: brand.body }}>
-        Enjoy {discountLabel} on your order over ₦{minOrder.toLocaleString()}.
+        Enjoy {discountLabel} on your order{minOrder > 0 ? ` over ₦${minOrder.toLocaleString('en-NG')}` : ''}.
         {expiresAt
           ? ` Valid until ${new Date(expiresAt).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' })}.`
           : ''}
