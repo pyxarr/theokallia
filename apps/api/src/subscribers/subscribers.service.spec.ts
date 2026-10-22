@@ -116,16 +116,34 @@ describe('SubscribersService', () => {
 
     it('leaves the tags of an existing subscriber alone when a guest re-subscribes', async () => {
       userDelegate.findUnique.mockResolvedValue(null)
+      // §10.1.1 — an existing subscriber is re-activated, so seed it inactive.
       const subscriber = fakeSubscriber({
         email: 'ada@example.com',
         tags: ['guest', 'vip'],
-        active: true,
+        active: false,
       })
 
       await service.subscribe({ email: 'ada@example.com' })
 
       expect(subscriber.record?.tags).toEqual(['guest', 'vip'])
       expect(subscriber.record?.active).toBe(true)
+    })
+
+    it('creates a registered subscriber for an authenticated user without a subscriber row', async () => {
+      userDelegate.findUnique.mockResolvedValue({
+        id: 'usr_1',
+        email: 'ada@example.com',
+      })
+      const subscriber = fakeSubscriber(null)
+
+      await service.subscribe({ email: 'ada@example.com' })
+
+      expect(subscriber.record).toEqual({
+        email: 'ada@example.com',
+        userId: 'usr_1',
+        tags: ['registered'],
+        active: true,
+      })
     })
 
     it('keeps the existing tags and ensures "registered" for an authenticated subscriber', async () => {
@@ -146,6 +164,24 @@ describe('SubscribersService', () => {
         'vip',
       ])
       expect(subscriber.record?.userId).toBe('usr_1')
+    })
+
+    it('keeps the "guest" tag and adds "registered" for an authenticated subscriber', async () => {
+      userDelegate.findUnique.mockResolvedValue({
+        id: 'usr_1',
+        email: 'ada@example.com',
+      })
+      const subscriber = fakeSubscriber({
+        email: 'ada@example.com',
+        tags: ['guest'],
+        active: true,
+      })
+
+      await service.subscribe({ email: 'ada@example.com' })
+
+      // §10.1.2 only ensures "registered" is present; swapping "guest" for
+      // "registered" is §10.1.3's job, on account creation.
+      expect(subscriber.record?.tags).toEqual(['guest', 'registered'])
     })
 
     it('does not duplicate the "registered" tag', async () => {
