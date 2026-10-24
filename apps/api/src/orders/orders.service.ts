@@ -347,6 +347,10 @@ export class OrdersService {
    * Promotes a customer to VIP once they cross either SiteConfig threshold
    * (order count or lifetime spend), then alerts the business and tags their
    * subscriber record. No-op when the customer is already VIP.
+   *
+   * Uses an atomic updateMany with isVip: false to prevent:
+   * - Duplicate promotions under concurrent workers
+   * - Silent side-effect loss when BullMQ retries after a failure
    */
   async evaluateVip(userId: string) {
     // The thresholds live in the single settings row the admin page writes.
@@ -356,7 +360,11 @@ export class OrdersService {
       where: { id: userId },
     })
 
-    if (!user || user.isVip) {
+    if (!user) {
+      return
+    }
+
+    if (user.isVip) {
       return
     }
 
@@ -379,10 +387,17 @@ export class OrdersService {
 
     const vipSince = new Date()
 
-    await this.prisma.client.user.update({
-      where: { id: userId },
+    // Atomic promotion: only update if not already VIP.
+    // Returns count of updated rows — 1 means this worker won the race.
+    const updated = await this.prisma.client.user.updateMany({
+      where: { id: userId, isVip: false },
       data: { isVip: true, vipSince },
     })
+
+    // If another worker already promoted, skip side effects.
+    if (updated.count === 0) {
+      return
+    }
 
     // §7.2 Side Effect A — alert the business. Payload mirrors VipNotificationEmailProps
     await this.mailQueue.add('send-vip-notification', {
@@ -402,16 +417,18 @@ export class OrdersService {
    * if the customer has never subscribed. Existing tags are preserved.
    */
   private async tagVipSubscriber(email: string, userId: string) {
+    const normalized = email.trim().toLowerCase()
+
     const existing = await this.prisma.client.subscriber.findUnique({
-      where: { email },
+      where: { email: normalized },
     })
 
     // §7.2 Side Effect B — append "vip" unless it is already there.
     const tags = existing?.tags ?? []
 
     await this.prisma.client.subscriber.upsert({
-      where: { email },
-      create: { email, userId, tags: ['registered', 'vip'], active: true },
+      where: { email: normalized },
+      create: { email: normalized, userId, tags: ['registered', 'vip'], active: true },
       update: {
         userId,
         tags: {

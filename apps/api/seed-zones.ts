@@ -99,11 +99,7 @@ async function main() {
   await prisma.siteConfig.upsert({
     where: { id: 'singleton' },
     update: {},
-    create: {
-      id: 'singleton',
-      vipOrderThreshold: 3,
-      vipSpendThreshold: 200000,
-    },
+    create: { id: 'singleton' },
   })
   console.log('SiteConfig singleton ensured.')
 

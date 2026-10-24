@@ -57,7 +57,7 @@ describe('Payments E2E (with mocked Paystack)', () => {
     const product = await prisma.client.product.create({ data: { id: 'prod_test1', name: 'Test Product', slug: 'test-product', description: 'Test', price: 50000, inStock: true, stock: 10, categoryId: category.id } })
     await prisma.client.cart.create({ data: { userId: user.id, items: { create: { productId: product.id, quantity: 1 } } } })
     await prisma.client.shippingZone.createMany({ data: [{ id: 'zone_nationwide', name: 'Nationwide', rate: 2000, active: true }, { id: 'zone_lagos', name: 'Lagos', rate: 1000, active: true }, { id: 'zone_international', name: 'International', rate: 15000, active: true }] })
-    await prisma.client.siteConfig.create({ data: { id: 'singleton', vipOrderThreshold: 3, vipSpendThreshold: 200000 } })
+    await prisma.client.siteConfig.create({ data: { id: 'singleton' } })
     return { user, product }
   } 
 describe('POST /v1/orders → POST /v1/payments/initialize → webhook → paid', () => {

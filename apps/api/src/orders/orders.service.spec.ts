@@ -17,7 +17,7 @@ describe('OrdersService — VIP evaluation', () => {
     stockReservation: { deleteMany: jest.fn() },
   }
   const orderDelegate = { aggregate: jest.fn() }
-  const userDelegate = { findUnique: jest.fn(), update: jest.fn() }
+  const userDelegate = { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() }
   const subscriberDelegate = { findUnique: jest.fn(), upsert: jest.fn() }
   const ordersQueue = { add: jest.fn() }
   const mailQueue = { add: jest.fn() }
@@ -55,6 +55,9 @@ describe('OrdersService — VIP evaluation', () => {
     prisma.client.$transaction.mockImplementation(
       (cb: (t: typeof tx) => unknown) => cb(tx),
     )
+
+    // updateMany returns { count: 1 } by default (promotion succeeds)
+    userDelegate.updateMany.mockResolvedValue({ count: 1 })
 
     service = new OrdersService(
       prisma as unknown as PrismaService,
@@ -148,8 +151,8 @@ describe('OrdersService — VIP evaluation', () => {
 
     await service.evaluateVip('usr_1')
 
-    expect(userDelegate.update).toHaveBeenCalledWith({
-      where: { id: 'usr_1' },
+    expect(userDelegate.updateMany).toHaveBeenCalledWith({
+      where: { id: 'usr_1', isVip: false },
       data: { isVip: true, vipSince: expect.any(Date) },
     })
     expect(mailQueue.add).toHaveBeenCalledWith(
@@ -178,7 +181,7 @@ describe('OrdersService — VIP evaluation', () => {
 
     await service.evaluateVip('usr_1')
 
-    expect(userDelegate.update).toHaveBeenCalled()
+    expect(userDelegate.updateMany).toHaveBeenCalled()
     expect(mailQueue.add).toHaveBeenCalledWith(
       'send-vip-notification',
       expect.objectContaining({ totalOrders: 1, totalSpend: 250000 }),
@@ -265,9 +268,36 @@ describe('OrdersService — VIP evaluation', () => {
     await service.evaluateVip('usr_1')
 
     expect(siteConfigService.get).toHaveBeenCalled()
-    expect(userDelegate.update).toHaveBeenCalledWith({
-      where: { id: 'usr_1' },
+    expect(userDelegate.updateMany).toHaveBeenCalledWith({
+      where: { id: 'usr_1', isVip: false },
       data: { isVip: true, vipSince: expect.any(Date) },
     })
+  })
+
+  it('handles concurrent promotion — only one worker sends email and tags subscriber', async () => {
+    // Simulate two workers calling evaluateVip concurrently.
+    // The first updateMany returns count: 1 (winner), second returns count: 0 (loser).
+    userDelegate.findUnique.mockResolvedValue(baseUser)
+    orderDelegate.aggregate.mockResolvedValue({
+      _count: { _all: 3 },
+      _sum: { total: 30000 },
+    })
+    const subscriber = fakeSubscriber(null)
+
+    // First call — winner
+    userDelegate.updateMany.mockResolvedValueOnce({ count: 1 })
+    await service.evaluateVip('usr_1')
+
+    // Second call — loser (simulate another worker)
+    userDelegate.updateMany.mockResolvedValueOnce({ count: 0 })
+    await service.evaluateVip('usr_1')
+
+    // Winner sends email and tags subscriber
+    expect(mailQueue.add).toHaveBeenCalledTimes(1)
+    expect(subscriberDelegate.upsert).toHaveBeenCalledTimes(1)
+
+    // Loser does nothing — no second email, no second tag
+    expect(mailQueue.add).not.toHaveBeenCalledTimes(2)
+    expect(subscriberDelegate.upsert).not.toHaveBeenCalledTimes(2)
   })
 })
