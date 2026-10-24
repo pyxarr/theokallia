@@ -8,6 +8,7 @@ FROM base AS build
 
 # Copy all workspace manifests so pnpm can resolve the full closure
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY turbo.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY apps/admin/package.json ./apps/admin/
@@ -41,6 +42,7 @@ RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
 
 # Copy all workspace manifests for production install
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY turbo.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY apps/admin/package.json ./apps/admin/
