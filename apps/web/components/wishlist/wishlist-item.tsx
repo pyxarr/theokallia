@@ -9,21 +9,7 @@ import { useGuestWishlistStore } from '@/lib/stores/guest-wishlist-store'
 import { useGuestCartStore } from '@/lib/stores/guest-cart-store'
 import { useCurrency } from '@/lib/hooks/use-currency'
 import { toast } from 'sonner'
-import type { Asset } from '@theokallia/types'
-
-export interface WishlistItemProduct {
-  id: string
-  name: string
-  slug: string
-  price: number
-  usdPrice?: number | null
-  gbpPrice?: number | null
-  assets: Asset[]
-  inStock: boolean
-  stock: number
-  category: { name: string }
-  subcategory?: { name: string } | null | undefined
-}
+import type { WishlistItemProduct } from '@/lib/hooks/use-wishlist'
 
 interface WishlistItemProps {
   // authenticated wishlist item shape — has a WishlistItem wrapper with its own id

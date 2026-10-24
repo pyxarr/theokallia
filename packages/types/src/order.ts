@@ -1,8 +1,13 @@
+import type { Asset } from './asset'
+
 export interface Order {
   id: string
   userId: string
   status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
   total: number
+  discount?: number
+  shippingFee?: number
+  shippingAddress?: Record<string, unknown>
   items: OrderItem[]
   createdAt: string
   updatedAt: string
@@ -14,9 +19,9 @@ export interface OrderItem {
   productId: string
   quantity: number
   price: number
-  product?: {
+  product: {
     name: string
-    images: string[]
+    assets: Asset[]
     slug: string
   }
 }

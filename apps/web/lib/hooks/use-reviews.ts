@@ -1,20 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+import type { Review } from '@theokallia/types'
 
-// Types
-
-interface ReviewUser {
-  firstName: string
-  lastName: string
-}
-
-export interface Review {
-  id: string
-  rating: number
-  comment: string
-  createdAt: string
-  user: ReviewUser
-}
+export type { Review }
 
 export interface ReviewsSummary {
   reviews: Review[]

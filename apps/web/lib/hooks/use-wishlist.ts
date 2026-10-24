@@ -2,11 +2,24 @@ import api from '@/lib/api'
 import { clearGuestWishlist } from '@/lib/wishlist-storage'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useGuestWishlistStore } from '../stores/guest-wishlist-store'
-import type { WishlistItemProduct } from '@/components/wishlist/wishlist-item'
 import { toast } from 'sonner'
 import type { Asset } from '@theokallia/types'
 
 // types
+
+export interface WishlistItemProduct {
+  id: string
+  name: string
+  slug: string
+  price: number
+  usdPrice?: number | null
+  gbpPrice?: number | null
+  assets: Asset[]
+  inStock: boolean
+  stock: number
+  category: { name: string }
+  subcategory?: { name: string } | null | undefined
+}
 
 interface WishlistProduct {
   id: string

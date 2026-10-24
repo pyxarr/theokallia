@@ -1,3 +1,5 @@
+import type { Asset } from './asset'
+import type { Review } from './review'
 import { Category, Subcategory } from './category'
 
 export interface Product {
@@ -6,16 +8,27 @@ export interface Product {
   name: string
   description: string
   price: number
-  images: string[]
+  usdPrice?: number | null
+  gbpPrice?: number | null
+  assets: Asset[]
   inStock: boolean
   stock: number
   category: Category
-  subcategory?: Subcategory
+  subcategory: Subcategory | null
+  reviews?: Review[]
   rating?: number
   reviewCount?: number
   ratingBreakdown?: RatingBreakdown
   createdAt: string
   updatedAt: string
+}
+
+export interface RatingBreakdown {
+  5: number
+  4: number
+  3: number
+  2: number
+  1: number
 }
 
 export interface RatingBreakdown {

@@ -1,37 +1,15 @@
 import api from '@/lib/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth-store'
-import type { Asset } from '@theokallia/types'
+import type { Order } from '@theokallia/types'
 
 // types
-
-interface OrderItem {
-  id: string
-  productId: string
-  quantity: number
-  price: number
-  product: {
-    name: string
-    assets: Asset[]
-  }
-}
 
 interface ShippingAddress {
   street: string
   city: string
   state: string
   country: string
-}
-
-interface Order {
-  id: string
-  total: number
-  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
-  createdAt: string
-  updatedAt: string
-  items: OrderItem[]
-  shippingAddress: ShippingAddress
-  shippingFee?: number
 }
 
 // fetchers

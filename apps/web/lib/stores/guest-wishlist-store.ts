@@ -1,6 +1,6 @@
 import { getGuestWishlist, toggleGuestWishlist } from '@/lib/wishlist-storage'
 import { create } from 'zustand'
-import type { WishlistItemProduct } from '@/components/wishlist/wishlist-item'
+import type { WishlistItemProduct } from '@/lib/hooks/use-wishlist'
 
 interface GuestWishlistStore {
   items: WishlistItemProduct[] // full product objects stored in localStorage

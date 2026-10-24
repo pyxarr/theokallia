@@ -1,23 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
-
-interface Subcategory {
-  id: string
-  name: string
-  slug: string
-  image: string | null
-  categoryId: string
-  createdAt: string
-}
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-  image: string | null
-  subcategories: Subcategory[]
-  createdAt: string
-}
+import type { Category } from '@theokallia/types'
 
 // fetches all categories with their subcategories
 // used by the sidebar filter on /shop

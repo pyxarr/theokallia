@@ -1,58 +1,10 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
-import type { Asset, Paginated } from '@theokallia/types'
+import type { Paginated, Product } from '@theokallia/types'
 
-// Types
+export type { Product }
 
-interface Category {
-  id: string
-  name: string
-  slug: string
-}
-
-interface Subcategory {
-  id: string
-  name: string
-  slug: string
-}
-
-interface Review {
-  id: string
-  rating: number
-  comment: string
-  createdAt: string
-  user: {
-    firstName: string
-    lastName: string
-  }
-}
-
-export interface Product {
-  id: string
-  name: string
-  slug: string
-  description: string
-  price: number
-  usdPrice: number | null
-  gbpPrice: number | null
-  assets: Asset[]
-  inStock: boolean
-  stock: number
-  category: Category
-  subcategory: Subcategory | null
-  reviews: Review[]
-  rating: number
-  reviewCount: number
-  ratingBreakdown: {
-    5: number
-    4: number
-    3: number
-    2: number
-    1: number
-  }
-  createdAt: string
-  updatedAt: string
-}
+// fetchers
 
 export interface ProductFilters {
   category?: string   // comma-separated slugs e.g. 'rings,bracelets'

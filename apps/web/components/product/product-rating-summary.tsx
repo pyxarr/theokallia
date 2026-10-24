@@ -1,3 +1,5 @@
+import type { RatingBreakdown } from '@theokallia/types'
+
 const SharpStar = ({ className }: { className?: string }) => (
   <svg
     width="20"
@@ -12,14 +14,6 @@ const SharpStar = ({ className }: { className?: string }) => (
     />
   </svg>
 )
-
-interface RatingBreakdown {
-  5: number
-  4: number
-  3: number
-  2: number
-  1: number
-}
 
 interface ProductRatingSummaryProps {
   rating: number

@@ -1,4 +1,4 @@
-import type { WishlistItemProduct } from '@/components/wishlist/wishlist-item'
+import type { WishlistItemProduct } from '@/lib/hooks/use-wishlist'
 
 const WISHLIST_KEY = 'theokallia_guest_wishlist'
 const isBrowser = typeof window !== 'undefined'
