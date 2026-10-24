@@ -32,7 +32,7 @@ RUN pnpm build
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
-RUN npm install -g pnpm
+RUN npm install -g pnpm turbo
 WORKDIR /app
 
 ENV NODE_ENV=production
