@@ -36,7 +36,9 @@ export default function AdminGuard({
   useEffect(() => {
     if (isPending) return
     if (!user) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`)
+      router.replace(
+        `/login?next=${encodeURIComponent(pathname + window.location.search)}`
+      )
     } else if (!isAdmin) {
       router.replace('/unauthorized')
     }

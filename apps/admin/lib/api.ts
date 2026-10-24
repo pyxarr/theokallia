@@ -17,11 +17,12 @@ if (typeof window !== 'undefined') {
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        // Clear any cached queries and redirect. The current path is
-        // carried over as `?next=` so the admin lands back on the page
-        // they were on instead of the dashboard.
+        // Clear any cached queries and redirect. The current path AND
+        // query string are carried over as `?next=` so the admin lands
+        // back on the exact page they were on (e.g. /orders?page=2).
         window.location.href =
-          '/login?next=' + encodeURIComponent(window.location.pathname)
+          '/login?next=' +
+          encodeURIComponent(window.location.pathname + window.location.search)
       }
       return Promise.reject(error)
     },
