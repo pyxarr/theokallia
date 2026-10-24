@@ -282,7 +282,6 @@ describe('OrdersService — VIP evaluation', () => {
       _count: { _all: 3 },
       _sum: { total: 30000 },
     })
-    const subscriber = fakeSubscriber(null)
 
     // First call — winner
     userDelegate.updateMany.mockResolvedValueOnce({ count: 1 })

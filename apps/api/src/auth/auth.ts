@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { prisma } from '../infra/clients'
-import { mailQueue, subscribersQueue, shutdown } from '../infra/queues'
+import { mailQueue, subscribersQueue } from '../infra/queues'
 import { PrismaService } from '../prisma/prisma.service'
 import { WelcomeCouponService } from '../coupons/welcome-coupon.service'
 

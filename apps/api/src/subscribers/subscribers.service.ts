@@ -199,11 +199,4 @@ export class SubscribersService {
   private ensureTag(tags: string[], tag: string): string[] {
     return tags.includes(tag) ? tags : [...tags, tag]
   }
-
-  /** Order-insensitive comparison of two tag arrays. */
-  private sameTags(a: string[], b: string[]) {
-    if (a.length !== b.length) return false
-    const set = new Set(a)
-    return b.every((tag) => set.has(tag))
-  }
 }
