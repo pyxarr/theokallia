@@ -62,7 +62,7 @@ interface UpdateCartItemPayload {
   quantity: number
 }
 
-import type { LocalCartItem, SkippedCartItem, MergeCartResponse } from '@theokallia/types'
+import type { LocalCartItem, MergeCartResponse } from '@theokallia/types'
 
 // fetchers
 
