@@ -44,3 +44,4 @@ yarn-error.log*
 # Superpowers session artifacts (ledger, logs, specs, plans) — not product code
 .superpowers/
 docs/superpowers/
+.env*
