@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -108,6 +108,7 @@ function couponTerms(coupon: AdminCoupon): string {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
   const {
     data: config,
     isPending: isConfigPending,
@@ -450,7 +451,9 @@ export default function SettingsPage() {
                 </Badge>
                 <Button
                   variant="outline"
-                  render={<Link href={`/coupons/${welcomeCoupon.id}/edit`} />}
+                  onClick={() =>
+                    void router.push(`/coupons/${welcomeCoupon.id}/edit`)
+                  }
                 >
                   Edit coupon
                 </Button>
