@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["NODE_ENV", "NEXT_RUNTIME", "CI"],
+  "globalEnv": ["NODE_ENV", "NEXT_RUNTIME", "CI", "PAYLOAD_SECRET", "PAYLOAD_DATABASE_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
