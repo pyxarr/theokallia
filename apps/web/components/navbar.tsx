@@ -37,10 +37,10 @@ const Navbar = ({ onOpenLogin, onOpenSignUp }: NavbarProps) => {
   // guest cart — reads from Zustand store (hydrated from localStorage on app load)
   const { items: guestItems } = useGuestCartStore()
 
-  // cart badge count — number of distinct items, not total quantity
+  // cart badge count — total quantity across all line items
   const cartCount = isAuthenticated
-    ? (dbCart?.items?.length ?? 0)
-    : guestItems.length
+    ? (dbCart?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0)
+    : guestItems.reduce((sum, item) => sum + item.quantity, 0)
 
   // authenticated wishlist — reads from React Query cache
   const { data: dbWishlist } = useWishlist(isAuthenticated)

@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@theokallia/ui/components/ui/select'
+} from '@/components/ui/select'
 
 /**
  * Navbar currency selector. Persists the choice to localStorage and a cookie

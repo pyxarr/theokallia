@@ -102,7 +102,7 @@ export function useCurrency() {
    */
   const fmt = (ngnAmount: number, product?: PriceSource) => {
     const { symbol, amount } = formatPrice(ngnAmount, product)
-    return <>{symbol}<span className="font-sans">{amount}</span></>
+    return <><span className="font-sans text-xl">{symbol}</span><span className="ml-1">{amount}</span></>
   }
 
   return { currency, setCurrency, formatPrice, format, convert, fmt, rates, options: CURRENCY_OPTIONS }

@@ -64,9 +64,17 @@ const SidebarFilter = () => {
 
   /** Builds a currency-aware label for an NGN price range. */
   const rangeLabel = ({ min, max }: { min?: number; max?: number }) => {
-    if (min === undefined && max !== undefined) return `Under ${formatPrice(max)}`
-    if (max === undefined && min !== undefined) return `Above ${formatPrice(min)}`
-    return `${formatPrice(min ?? 0)} – ${formatPrice(max ?? 0)}`
+    if (min === undefined && max !== undefined) {
+      const { symbol, amount } = formatPrice(max)
+      return `Under ${symbol} ${amount}`
+    }
+    if (max === undefined && min !== undefined) {
+      const { symbol, amount } = formatPrice(min)
+      return `Above ${symbol} ${amount}`
+    }
+    const minFormatted = formatPrice(min ?? 0)
+    const maxFormatted = formatPrice(max ?? 0)
+    return `${minFormatted.symbol} ${minFormatted.amount} – ${maxFormatted.symbol} ${maxFormatted.amount}`
   }
   const {
     data: categories = [],
