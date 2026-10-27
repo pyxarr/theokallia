@@ -1,11 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,6 +16,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -38,6 +38,22 @@ export default function AdminTopbar() {
     .slice(0, 2)
     .toUpperCase()
 
+  const PAGE_LABELS: Record<string, string> = {
+    '/dashboard': 'Dashboard',
+    '/products': 'Products',
+    '/categories': 'Categories',
+    '/orders': 'Orders',
+    '/reviews': 'Reviews',
+    '/customers': 'Customers',
+    '/newsletter': 'Newsletter',
+    '/studio': 'Content',
+    '/coupons': 'Coupons',
+    '/settings': 'Settings',
+  }
+
+  const pathname = usePathname()
+  const currentPage = PAGE_LABELS[pathname] ?? pathname.split('/').pop() ?? 'Dashboard'
+
   const handleLogout = async () => {
     await authClient.signOut()
     router.push('/login')
@@ -46,7 +62,6 @@ export default function AdminTopbar() {
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
 
       <Breadcrumb className="hidden sm:block">
         <BreadcrumbList>
@@ -57,7 +72,7 @@ export default function AdminTopbar() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            <BreadcrumbPage>{currentPage}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -66,9 +81,7 @@ export default function AdminTopbar() {
         <Badge className="hidden bg-[#F3E8FF] text-[#7E22CE] sm:inline-flex">Admin</Badge>
 
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="ghost" className="h-9 gap-2 px-2" />}
-          >
+          <DropdownMenuTrigger className="h-9 gap-2 px-2 cursor-pointer flex items-center">
             <Avatar className="size-7">
               <AvatarFallback className="bg-[#7E22CE] text-xs text-white">
                 {initials}
@@ -77,9 +90,11 @@ export default function AdminTopbar() {
             <span className="hidden text-sm md:inline">{displayName}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="truncate">
-              {user?.email ?? 'Signed in'}
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="truncate">
+                {user?.email ?? 'Signed in'}
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>Log Out</DropdownMenuItem>
           </DropdownMenuContent>

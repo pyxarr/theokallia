@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -84,17 +85,23 @@ export default function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
-              <div className="flex aspect-square size-8 items-center justify-center bg-[#7E22CE] text-sm font-semibold text-white">
-                T
-              </div>
-              <div className="grid flex-1 text-left leading-tight">
+              <Image
+                src="/logo.webp"
+                alt="Theokallia Logo"
+                width={180}
+                height={200}
+                // sizes="200px"
+                priority
+                className="object-contain"
+              />
+              {/* <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate font-le-jour tracking-wide uppercase">
                   Theokallia
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   Admin
                 </span>
-              </div>
+              </div> */}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

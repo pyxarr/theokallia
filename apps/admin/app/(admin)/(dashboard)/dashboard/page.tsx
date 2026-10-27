@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { cn } from 'cn'
 import { Package, ShoppingCart, Star, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -110,7 +111,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/orders"
-            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'cursor-pointer')}
           >
             View all orders
           </Link>
